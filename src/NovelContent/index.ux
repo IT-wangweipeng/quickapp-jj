@@ -1,0 +1,1626 @@
+<import name="titleBar" src="./../common/titleBar"></import>
+<import name="wanka-ad-view" src="./../WankaAdSDK/dist/Ad-component/view"></import>
+<template>
+  <div class="doc-page" style="background-color:{{backgroundColor}};">
+
+    <refresh offset="100px" class="refresh" onrefresh="refresh" refreshing="{{isRefreshing}}" type="{{refreshType}}">
+      <!-- 内容 -->
+      <list class="content" id="content" onclick="showTitleAndSetView" onscrollbottom="scrollbottomContent" onscroll="contentScroll()">
+
+        <list-item type="content" class="content-list-item" for="{{content}}">
+          <text class="chapter-title" style="color:{{contentColor}};" onappear="appearfn($idx)">{{ $item.title }}</text>
+          <text class="content-text txtStyle" style="font-size:{{fontSize}};color:{{contentColor}}" if="{{$item.isvip === '0' || $item.isvip === 0 || userIsVIP}}">{{
+            $item.content }}
+          </text>
+          <div class="content-text-vip-div" else>
+            <text class="content-text txtStyle content-text-vip" style="font-size:{{fontSize}};color:{{contentColor}}">{{
+              $item.content }}
+            </text>
+            <!--VIP章节 引导开通VIP guideOpenVip-->
+            <div class="guide-open-vip" onclick="showTitleAndFooter" if="{{hadJoinInVIPChapter}}" show="{{!userIsVIP}}">
+              <div class="guide-openvip-div">
+                <text class="guide-openvip-div-text">{{viptext}}</text>
+                <div class="vip-fenge-line-div">
+                  <div class="fenge-line1"></div>
+                  <div class="fenge-line2"></div>
+                </div>
+                <text class="guide-openvip-div-bottom-text">{{bottomText}}</text>
+
+                <!-- 未登录显示 -->
+                <text class="guide-openvip-safetxt" if="{{!userHadLogin}}">{{safePromptText}}</text>
+
+                <div class="guide-openvip-div-button" @click="openVipClick">
+                  <text class="openvip-button-text" if="{{!userHadLogin}}">{{openVipButtonTxtNoLogin}}</text>
+                  <text class="openvip-button-text" if="{{userHadLogin}}">{{openVipButtonTxt}}</text>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 原生广告 -->
+          <div class="ad-position" show="{{$item.showAd == 1 && showChapterAdByUserInfo}}" if="{{$item.showAd == 1 && showChapterAdByUserInfo}}">
+            <wanka-ad-view type="native" adslot_id="{{ $item.nativeAdId }}" @ad-ready="onadReady( $item )" @ad-error="onadError( $item )" @ad-closed="onadClosed( $item )" @ad-show="onadShow( $item )" @ad-click="onadClick( $item )"></wanka-ad-view>
+          </div>
+          <div class="ad-position" show="{{$item.showSecondAd == 1 && showChapterAdByUserInfo}}" if="{{$item.showSecondAd == 1 && showChapterAdByUserInfo}}">
+            <wanka-ad-view type="native" adslot_id="{{ $item.nativeAdId }}" @ad-ready="onadReady( $item )" @ad-error="onadError( $item )" @ad-closed="onadClosed( $item )" @ad-show="onadShow( $item )" @ad-click="onadClick( $item )"></wanka-ad-view>
+          </div>
+          <text class="close-ad-div-buttontxt1" onclick="closeAD" show="{{$item.showRemoveAdBtn == 1 && showChapterAdByUserInfo}}">{{closeAdTxt}}</text><!-- 关闭广告   -->
+
+          <!-- 自留广告组件 -->
+          <div class="retent-chapter-ad-div" if="{{$item.showRetentionChapterAd}}">
+            <stack>
+              <!-- onclick="goToRetentionChapterAdWebPage($item)" -->
+              <image class="retent-chapter-ad-img" src="{{$item.chapterRetentionData.imgurl}}" onclick="goToRetentionChapterAdWebPage($item)"></image>
+              <!-- <a class="retent-chapter-ad-aurl" href="{{$item.jsUrl}}" onclick="goToBrowser($item)">{{empty}}</a> -->
+              <image class="retent-chapter-ad-remove-image" src="../Common/images/close.png" onclick="removeChapterRetentAd($item)"></image>
+            </stack>
+          </div>
+          <text class="close-ad-div-buttontxt1" onclick="closeAD" if="{{$item.showRetentionChapterAd}}">{{closeAdTxt}}</text><!-- 关闭广告   -->
+
+        </list-item>
+        <!-- 加载更多，type属性自定义命名为loadMore -->
+        <list-item type="loadMore" class="{{contentLoadMoreStyle}}">
+          <progress type="circular" show="{{ hasMoreData }}"></progress>
+          <text show="{{ hasMoreData }}">加载中....</text>
+          <text show="{{ !hasMoreData }}">没有更多了~</text>
+        </list-item>
+
+      </list>
+    </refresh>
+
+    <!-- 去广告引导开通VIP -->
+    <div class="mask-view" if="{{showOpenVIPDialog}}">
+      <div class="open-vip-dialog-view-div">
+        <image src="../Common/images/dialog-close.png" class="dialog-close-image" onclick="closeOpenVIPDialog"></image>
+        <text class="dialog-openvip-txt1">温馨提示</text>
+        <text class="dialog-openvip-txt2">此功能需要您开通VIP会员后享用哦</text>
+        <text class="dialog-openvip-txtbutton" onclick="openVipClick">立即开通</text>
+      </div>
+    </div>
+
+    <!--wanca banner⼴告 -->
+    <text class="close-ad-div-buttontxt" onclick="closeAD" if="{{showRemoveADBtn}}">{{closeAdTxt}}</text><!-- 关闭广告 -->
+    <div class="bottom-ad-position" show="{{showWancaBanAd}}" if="{{showWancaBanAd}}">
+      <wanka-ad-view type="banner" adslot_id="{{ banner_id }}" position="bottom" @ad-ready="onadBannerReady" @ad-show="onadShowBanner" @ad-click="onadClickBanner" @ad-closed="onadClosedBanner" @ad-error="onadErrorBanner"></wanka-ad-view>
+    </div>
+
+    <!--banner自留⼴告 -->
+    <text class="close-ad-div-buttontxt" onclick="closeAD" if="{{show_banner_Retention_Ad}}">{{closeAdTxt}}</text><!-- 关闭广告 -->
+    <div class="retention_banner_ad_div" if="{{show_banner_Retention_Ad}}">
+      <!-- <stack> -->
+        <!-- <div style="height:120px;width:710px"> -->
+          <image class="retention_banner_ad_image" src="{{retent_banner_image}}" onclick="goRetentBannerAdPage"></image>
+          <div class="retention_banner_ad_title_div" onclick="goRetentBannerAdPage">
+          <text class="retention_banner_ad_title">{{retent_banner_title}}</text>
+          <text class="retention_banner_ad_subtitle">{{retent_banner_subtitle}}</text>
+          </div>
+        <!-- </div> -->
+        <!-- <a style="height:120px;width:710px;" href="{{jsBannerUrl}}" onclick="bannerGoToBrowser">{{empty}}</a> -->
+      <!-- </stack> -->
+      <image class="retention_banner_ad_remove_image" src="../Common/images/close.png" onclick="removeRetentBannerAd()"></image>
+    </div>
+
+    <!-----------------设置 && 头部------------------>
+    <!-- 头部 -->
+    <div class="header" show="{{showBookNameHeader}}">
+      <!-- <div class="back-button" onclick="backButtonClick">
+                <image src="../Common/images/arrow-left-0.png"></image>
+            </div> 返回按钮 产品暂无设计-->
+      <text class="book-name-header">{{bookName}}</text>
+      <text class="chapter-name-header">{{chapterName}}</text>
+    </div>
+    <!-- 底部菜单 -->
+    <div class="{{footerStyle}}" show="{{showTitleAndFooter}}">
+      <image class="image image-1" src="./../Common/images/catalog.png" onclick="toCatalog()"></image>
+      <image class="image image-2" src="{{ dayAndNeight ? './../Common/images/day.jpg' : './../Common/images/neight.jpg' }}" onclick="setBackground()"></image>
+      <image class="image image-3" src="./../Common/images/set.png" onclick="setFont()"></image>
+    </div>
+
+    <!-- 设置 -->
+    <div class="{{setStyle}}" show="{{showFont}}">
+
+      <div class="set-bright-div" show="{{showFont}}">
+        <text class="set-text-bright">亮度:</text>
+        <slider style="width:100%;selected-color:#FF0000;block-color:#f0f0f0" min="0" max="255" step="1" value="{{beginRightnessValue}}" onchange="getSliderValue"></slider>
+      </div>
+
+      <div class="set-text-div" show="{{showFont}}">
+        <text class="set-text">字号:</text>
+        <div class="doc-row">
+          <text class="input-button color-2" onclick="fontSmaller" style="color:{{fontSmallColor}};border-color:{{fontSmallBorder}}">A-</text>
+          <text class="input-button color-1" onclick="fontStandard" style="color:{{fontStandardColor}};border-color:{{fontStandardBorder}}">标准</text>
+          <text class="input-button color-3" onclick="fontBigger" style="color:{{fontBigColor}};border-color:{{fontBigBorder}}">A+</text>
+          <text class="input-button color-4" onclick="saveEyeColor" style="color:{{color}};border-color:{{border}}">护眼模式</text>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</template>
+
+
+<script>
+import { bookCatalogApi, bookContentApi, retentionAdApi, scrollGetBookContentApi, userAddCompleteBookApi, updateUserTodayReadTimesApi, bookDetailApi, bookFavoritesAddApi, adControlApi } from '../Common/api/api.js'
+import prompt from '@system.prompt'
+import router from '@system.router'
+import fetch from '@system.fetch'
+import storage from '@system.storage'
+import share from '@system.share'
+import device from '@system.device'
+import brightness from '@system.brightness'
+
+export default {
+  private: {
+    token: '',
+    userInfo: {},
+    userHadLogin: false,
+    needUpTime: false,//没有token时无需计时
+    userReadTime: 0,
+    userBeginReadTime: 0,
+    userEndReadTime: 0,
+    userOldReadTime: 0,
+    nativeAdCanShow: true,
+    bannerAdCanShow: true,
+    isRefreshing: false,
+    refreshType: 'pulldown',
+    theMiniChapterId: 1,
+    theBookMinimumCid: 1,
+    needBuyVip: false,
+    hadGetTheContentArr: [],
+    get_book_browse_arr: [],
+    hasMoreData: true,
+    hasTopMoreData: true,
+    showTitleAndFooter: false,
+    showBookNameHeader: false,
+    backgroundColor: '#FCFCFC',
+    fontSize: '40px',
+    showFont: false,
+    saveEye: false,
+    color: '',
+    beginRightnessValue: 0,//获取一开始的屏幕亮度
+    contentColor: '',
+    border: '',
+    fontSmallColor: '',
+    fontSmallBOrder: '',
+    fontStandardColor: 'red',
+    fontStandardBorder: 'red',
+    fontBigColor: '',
+    fontBigBorder: '',
+    dayAndNeight: true,
+    bookDetail: null,//用于缓存
+    hadAddToBookShelf: false,
+    join_bookshelf_cache_arr: [],
+    content: [],
+    chapterName: '',
+    showCatalogList: false, //书籍目录
+    catalogList: [],
+    list: [], //章节列表
+    page: 1,
+    key: 'C', //每次存入浏览缓存数组的对象名,
+    time: '', //时间戳
+    bookDetailInfo: {
+      //每次进入内容页、滑动加载、目录列表进入都要设置章节缓存
+      id: '',
+      cid: '',
+      cover: '',
+      name: '',
+      chapterName: '',
+      time: ''
+    },
+    join_book_browse_arr: [], //浏览缓存章节对象数组
+    arr: [],
+    showTopDiv: false,
+    topUnLock: true,
+    IMEI: '',
+    message: '',
+    cidInfo: {
+      bookId: '',
+      cid: ''
+    },
+    manyBookCidArr: [],
+    viptext: '您已进入VIP章节',
+    bottomText: '感谢支持作家，支持正版阅读',
+    openVipButtonTxt: '开通VIP,免广告',
+    openVipButtonTxtNoLogin: '登录开通VIP,免广告',
+    safePromptText: '为了保证您账户安全，请先登录再购买',
+    closeAdTxt: '去广告',
+    hadJoinInVIPChapter: false,
+    showOpenVIPDialog: false,
+    userIsVIP: false,
+    end_free_ad_time: '',
+    begin_free_ad_time: '',
+    contentLoadMoreStyle: 'content-load-more',
+    footerStyle: 'footer',
+    setStyle: 'set',
+    nativeAdId: '4503', // 原生广告位 id 优先4503  3928次之 
+    banner_id: '4384',// banner广告位id
+
+    thisBookMaximumChapter: 0,
+    isGetNextContent: false,//标志正在获取下一章
+
+    limitTimeFreeAd: false,//限时免广告
+    showChapterAd: true,
+    showWancaBanAd: false,
+    showRemoveADBtn: false,
+    showGioneeBanAd: false,
+    gioneeBannerAd: null,
+    showChapterAdByUserInfo: true,//登录回来是VIP或者限免书籍 去除广告并且隐藏已加载广告
+
+    chapterEndAdControRet: { list: [{ type: 6, ad_id: '4503', ad_type: 8 }, { type: 5, ad_id: '3928', ad_type: 8 }] },//章尾广告服务端优先级 这里防止数据为空
+    gioneeAdFirst: false,//banner广告是否金立优先标识
+    wankaAdFirst: false,//banner广告是否玩咖优先标识
+
+    show_banner_Retention_Ad: false,
+    retent_banner_image: '',
+    retent_banner_jump_url: '',
+    jsBannerUrl:'',
+    retent_banner_title: '',
+    retent_banner_subtitle: '',
+    empty : '     ',
+    // showRetentionChapterAd: false,
+    retentionChapterAdData: {},
+  },
+
+  protected: {
+    bookId: '',
+    cid: 1,
+    picUrl: '',
+    bookName: '',
+    isFromCatalog: false
+  },
+
+  onInit() {
+    this.showTitleAndFooter = false//??为什么这里设置下才生效
+    this.getUserSet()//获取用户设置
+    this.getHadJoinBookShelfOrNot()//获取是否已加入书架
+    this.getThisBookInfo(this.bookId)// 获取本书信息防止 本书出现书名没有拿到的情况
+    this.getMaxmumChapter()//获取最大章节数 备用
+
+    //获取记录并继续阅读
+    if (!this.isFromCatalog) {
+      //获取此书章节
+      bookCatalogApi(this.bookId, 1, 0)
+        .then((ret) => {
+          console.log('shit *************cataloList = ', ret)
+          this.catalogList = ret.list
+          this.cid = this.catalogList[0].id
+          this.theBookMinimumCid = this.catalogList[0].id
+          console.log('阅读页第一个章节 ************* = ', this.cid)
+          this.getBrowseCacheArr()
+        })
+        .catch((error) => {
+          console.log('error=', error)
+          prompt.showToast({
+            message: '章节获取失败'
+          })
+        })
+
+    } else {
+      //从目录页选择章节进入
+      this.theMiniChapterId = this.cid
+      //获取此书章节
+      bookCatalogApi(this.bookId, 1, 0)
+        .then((ret) => {
+          console.log('shit *************cataloList = ', ret)
+          this.catalogList = ret.list
+          this.theBookMinimumCid = this.catalogList[0].id
+          this.getContentFromCatalogPage()
+        })
+        .catch((error) => {
+          console.log('error=', error)
+          prompt.showToast({
+            message: '章节获取失败'
+          })
+        })
+    }
+  },
+
+
+  getMaxmumChapter() {//最大章节数获取
+
+    bookCatalogApi(this.bookId, 1, 1)
+      .then((ret) => {
+        console.log('最大章节数 ------- ret=', ret)
+        if (Object.keys(ret).length > 0 && ret.list.length > 0) {
+          this.thisBookMaximumChapter = Number(ret.list[0].id)
+        } else {
+          this.thisBookMaximumChapter = 0
+        }
+
+      })
+      .catch((error) => {
+        console.log('最大章节数 ------- 接口 error=', error)
+        this.thisBookMaximumChapter = 0
+      })
+  },
+
+  onShow() {
+    console.log('----------阅读页 onShow ------------')
+    this.refreshUI()
+    //阅读时间开始记录
+    let tmp = Date.parse(new Date()).toString()
+    this.userBeginReadTime = tmp.substr(0, 10)
+  },
+
+  refreshUI() {
+    console.log('onshow vip判断.... = ', this.userIsVIP)
+    this.token = this.$app.$def.token
+    this.userInfo = this.$app.$def.userInfo
+    this.userHadLogin = this.$app.$def.hadLogin
+
+    if (this.token != '') {
+      this.needUpTime = true  //用户登录 需上传阅读时间
+
+      if (this.userInfo.id != undefined) {
+        console.log('onshthis.userInfo.id.... = ', this.userInfo.id)
+        this.userOldReadTime = this.userInfo.ts.web_ts  //拉取的今日已读时间
+        this.userHadLogin = true  //是否已登录标识
+
+        if (this.userInfo.is_vip === 1) {
+          //vip免广告 可阅读所有章节 
+          this.userIsVIP = true  //用户是VIP
+          //广告控制  VIP全免  无需后续判断
+          this.showChapterAd = false
+          this.showWancaBanAd = false
+          this.showGioneeBanAd = false
+          this.showRemoveADBtn = false
+          this.showChapterAdByUserInfo = false
+          this.show_banner_Retention_Ad = false
+
+        } else {
+          this.userIsVIP = false //用户非VIP
+          this.getBookIsLimitFreeAd(this.bookId)//非vip 接着判断是否限免
+        }
+      } else {
+        this.getBookIsLimitFreeAd(this.bookId)
+      }
+
+    } else {
+      this.userIsVIP = false //用户非VIP
+      this.getBookIsLimitFreeAd(this.bookId)  //非vip 接着判断是否限免
+    }
+  },
+
+  //获取本书是否在限免
+  getBookIsLimitFreeAd(bookId) {
+    bookDetailApi(bookId)
+      .then((ret) => {
+        console.log('获取书详情 是否限免 = ', ret)
+        this.bookName = ret.name
+        this.end_free_ad_time = ret.end_ad_ts
+        this.begin_free_ad_time = ret.start_ad_ts
+        if ((this.end_free_ad_time != '') && (this.begin_free_ad_time != '')) {
+          let beginTimeDate = new Date(this.begin_free_ad_time)
+          let beginTimestamp = beginTimeDate.getTime()
+          let endTimeDate = new Date(this.end_free_ad_time)
+          let endTimestamp = endTimeDate.getTime()
+          let nowTimestamp = Date.parse(new Date())
+          if ((nowTimestamp <= endTimestamp) && (nowTimestamp >= beginTimestamp)) {
+            //在免广告时间内
+            console.log('还在免广告')
+            //广告控制 全免
+            this.showChapterAd = false
+            this.showWancaBanAd = false
+            this.showGioneeBanAd = false
+            this.showChapterAdByUserInfo = false
+            this.show_banner_Retention_Ad = false
+
+          } else {
+            //不是限免广告  继续获取后台广告控制接口的信息以便控制广告
+            this.getAdControlFromApi()
+          }
+        } else {
+          this.getAdControlFromApi()
+        }
+      })
+      .catch((error) => {
+        console.log('bookDetail error=', error)
+        this.getAdControlFromApi()
+      })
+  },
+
+  getAdControlFromApi() { //获取服务端广告配置优先级
+    console.log('readpage banner adcontrol request api')
+    this.getChapterAdControlFromApi(11)//阅读页章尾广告配置传11
+    this.getBannerAdControlFromApi(13)//阅读页banner广告配置传13
+  },
+  getChapterAdControlFromApi(num) {
+    //章尾广告只有玩咖
+    adControlApi(num)
+      .then((ret) => {
+        console.log('readpage chapter adcontrol ret ***********', ret)
+        //玩咖章尾有两种情况
+        //nativeAdId: '3928', // 原生广告位 id  
+        //nativeAdId: '4503',// 原生广告位--新开详情页广告ID
+        //调试模拟数据
+        // let retM = { list: [{ type: 6, ad_id: '4503', ad_type: 8 }, { type: 5, ad_id: '3928', ad_type: 8 }] }
+        if (ret.list.length > 0) {
+          this.chapterEndAdControRet = ret
+          this.nativeAdId = ret.list[0].ad_id
+          this.showChapterAd = true
+        } else {
+          console.log('没有章尾广告 过------------', ret)
+          return
+        }
+
+      })
+      .catch((error) => {
+        console.log('getChapterAdControlFromApi error=', error)
+      })
+  },
+
+  getBannerAdControlFromApi(num) {
+    //banner广告按优先级顺序请求 （含金立、玩咖）
+    adControlApi(num)
+      .then((ret) => {
+        console.log('readpage banner adcontrol ret...... ***********', ret)
+
+        //调试模拟数据
+        // let retM = { list: [{ type: 6, ad_id: '562', ad_type: 8 }, { type: 5, ad_id: '4384', ad_type: 8 }] }
+        if (ret.list.length > 0 && ret.list[0].type === 6) { //第一个是金立 （金立优先级最高） 已废
+
+
+        } else if (ret.list.length > 0 && Number(ret.list[0].type) === 5) {//第一个是玩咖 （玩咖优先级最高）
+
+          this.gioneeAdFirst = false
+          this.wankaAdFirst = true
+          this.banner_id = ret.list[0].ad_id
+          this.showWancaBanAd = true
+
+        } else {
+          console.log('没有banner广告 过-------------')
+          return
+        }
+
+      })
+      .catch((error) => {
+        console.log('getBannerAdControlFromApi error=', error)
+      })
+  },
+
+  // 自留广告数据拉取
+  getRetentionBannerAdData() {
+    const self = this
+    //广告类型  1 信息流  2 开屏 3 banner
+    retentionAdApi(3)
+      .then((ret) => {
+
+        console.log('banner retentionAdApi ret ***********', ret)
+        if (ret.imgurl && ret.imgurl.length > 0) {
+          //自留广告成功埋点
+          $umeng_stat.trackEvent('own_bannerad_request_success', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+          this.retent_banner_image = ret.imgurl
+          //测试 this.retent_banner_image = 'https://lsbumbzh.droibaascdn.com/droi/lsbumbzhVBNJHexWx84onBKtNeoxDyYKlQALvNwB/1162241611560685568/5d5645778bf6b1726.jpg'
+          this.retent_banner_jump_url = ret.jump_url
+          this.jsBannerUrl = `javascript: void((function() {window.location.href=' `+ this.retent_banner_jump_url + `'})())`
+          this.retent_banner_title = ret.title
+          this.retent_banner_subtitle = ret.subtitle
+          this.show_banner_Retention_Ad = true
+
+        } else {
+          this.show_banner_Retention_Ad = false
+        }
+
+      })
+      .catch((error) => {
+        this.show_banner_Retention_Ad = false
+        console.log('error=', error)
+      })
+  },
+
+  bannerGoToBrowser(){
+    console.log('自留广告banner点击 去浏览器====')
+    //自留广告banner点击埋点
+    $umeng_stat.trackEvent('own_bannerad_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+  },
+  goRetentBannerAdPage() {
+    //自留广告banner点击埋点
+    $umeng_stat.trackEvent('own_bannerad_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    //链接
+    router.push({
+      uri: 'WebView',
+      params: {
+        url: this.retent_banner_jump_url,
+      }
+    })
+  },
+  removeRetentBannerAd() {
+    this.show_banner_Retention_Ad = false
+  },
+
+  goToRetentionChapterAdWebPage(item){
+    //自留广告信息流点击埋点
+    $umeng_stat.trackEvent('own_chapterendad_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    //链接
+    router.push({
+      uri: 'WebView',
+      params: {
+        url: item.chapterRetentionData.jump_url
+      }
+    })
+  },
+
+  goToBrowser(item){
+    console.log('阅读页章尾广告点击  浏览器 ====== ')
+    //自留广告信息流点击埋点
+    $umeng_stat.trackEvent('own_chapterendad_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+  },
+
+  removeChapterRetentAd(item){
+    item.showRetentionChapterAd = 0
+  },
+
+
+  getThisBookInfo(bookId) {
+    //获取本书基本信息
+    bookDetailApi(bookId)
+      .then((ret) => {
+        console.log('本书详情 = ', ret)
+        this.bookName = ret.name
+      })
+      .catch((error) => {
+        console.log('bookDetail error=', error)
+      })
+  },
+
+  getHadJoinBookShelfOrNot() {
+    for (let i = 0; i < this.$app.$def.bookShelfList.length; i++) {
+      console.log('****************this.$app.$def.bookShelfList[i].id=', this.$app.$def.bookShelfList[i].id + '**********thisId =', this.bookId)
+      if (this.$app.$def.bookShelfList[i].id == this.bookId) {
+        console.log('this.$app.$def.bookShelfList[i].id ==========  this.bookId')
+        this.hadAddToBookShelf = true
+        break
+      }
+    }
+  },
+
+  backButtonClick() {
+    this.upReadTime()
+  },
+  onDestroy() {
+
+  },
+  onHide() {
+
+    console.log('阅读页被隐藏或推到后台  =')
+    //阅读暂停时间记录
+    if (this.needUpTime) {
+      let tmp = Date.parse(new Date()).toString()
+      this.userEndReadTime = tmp.substr(0, 10)
+      this.userReadTime = Number(this.userEndReadTime) - Number(this.userBeginReadTime)
+
+      //将旧时间加上阅读的时间上传
+      let newTime = Number(this.userOldReadTime) + Number(this.userReadTime)
+
+      let updateReadTimeData = {
+        'token': this.token,
+        'type': 2,
+        'ts': newTime
+      }
+      console.log('阅读页阅读时间上传post数据  = updateReadTimeData = ', updateReadTimeData)
+      updateUserTodayReadTimesApi(updateReadTimeData)
+        .then((ret) => {
+          console.log('阅读页阅读时间上传结果  = ret = ', ret)
+          let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+          updateUserInfoChannel.postMessage('autoLogin')
+        })
+        .catch((error) => {
+          console.log('阅读页阅读时间上传结果失败  = error = ', error)
+        })
+    }
+  },
+
+  onBackPress() {
+    console.log('阅读页将被退出  =')
+
+    if (this.hadAddToBookShelf) {
+      this.upReadTime()
+    } else {
+      this.showAddToShelfDialog()
+    }
+    return true
+  },
+
+  showAddToShelfDialog() {
+    const self = this
+    prompt.showDialog({
+      title: '加入书架',
+      message: '下次阅读时，可直接在书架中找到哦！',
+      buttons: [
+        {
+          text: '确定',
+          color: '#f85836'
+        }, {
+          text: '取消',
+          color: '#d3d3d3'
+        }
+      ],
+      success: function (ret) {
+        if (ret.index == 1) {
+          self.upReadTime()
+        } else {
+          //加入书架并上传时间
+          self.getBookDetailData(self.bookId)
+        }
+      },
+      cancel: function () {
+
+      }
+    })
+  },
+
+  upReadTime() {
+    if (this.needUpTime) {
+      let tmp = Date.parse(new Date()).toString()
+      this.userEndReadTime = tmp.substr(0, 10)
+      this.userReadTime = Number(this.userEndReadTime) - Number(this.userBeginReadTime)
+
+      //将旧时间加上阅读的时间上传
+      let newTime = Number(this.userOldReadTime) + Number(this.userReadTime)
+
+      let updateReadTimeData = {
+        'token': this.token,
+        'type': 2,
+        'ts': newTime
+      }
+      console.log('阅读页阅读时间上传post数据  = updateReadTimeData = ', updateReadTimeData)
+      updateUserTodayReadTimesApi(updateReadTimeData)
+        .then((ret) => {
+          console.log('阅读页阅读时间上传结果  = ret = ', ret)
+          let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+          updateUserInfoChannel.postMessage('autoLogin')
+          router.back()
+        })
+        .catch((error) => {
+          console.log('阅读页阅读时间上传结果失败  = error = ', error)
+          router.back()
+        })
+    } else {
+      router.back()
+    }
+  },
+
+  getBookDetailData(bookId) {
+
+    bookDetailApi(bookId)
+      .then((ret) => {
+
+        console.log('bookDetail ret=', ret)
+        if (ret.id != '' && ret.cover != '' && ret.name != '') {
+          this.bookDetail = ret
+          this.bookDetail.src = '../Common/images/select-0.png'
+          if (!this.hadAddToBookShelf) {
+            var bookShelfList = this.$app.$def.bookShelfList
+            bookShelfList.unshift(this.bookDetail)
+
+            if (this.$app.$def.hadLogin) {
+              let postData = {
+                'token': this.$app.$def.token,
+                'book_id': this.bookId,
+                'chapter_id': this.cid,
+                'chapter_sort': 0 //待定
+              }
+              bookFavoritesAddApi(postData)
+                .then((ret) => {
+                  console.log('bookFavoritesAddApi ret=', ret)
+                  this.$app.$def.bookShelfList = bookShelfList
+                  let addBookToShelfSuccessChannel = new BroadcastChannel('addBookToShelfSuccess')
+                  addBookToShelfSuccessChannel.postMessage('addBookToShelfSuccess')
+                  this.upReadTime()
+                })
+                .catch((error) => {
+                  console.log('bookFavoritesAddApi error=', error)
+                  prompt.showToast({
+                    message: '网络连接失败，请检查网络',
+                  })
+                })
+            } else {
+              storage.set({
+                key: 'bookShelfCache',
+                value: bookShelfList,
+                success: data => {
+                  console.log('novelContent-->addToBookshelf success data=' + data)
+                  this.$app.$def.bookShelfList = bookShelfList
+                  let addBookToShelfSuccessChannel = new BroadcastChannel('addBookToShelfSuccess')
+                  addBookToShelfSuccessChannel.postMessage('addBookToShelfSuccess')
+                  this.upReadTime()
+                },
+                fail: (data, code) => {
+                  console.log('novelContent-->addToBookshelf fail data=' + data + ',code=' + code)
+                }
+              })
+            }
+
+          } else {
+            this.upReadTime()
+          }
+        } else {
+          this.upReadTime()
+        }
+      })
+      .catch((error) => {
+        console.log('bookDetail error=', error)
+        this.upReadTime()
+      })
+  },
+
+
+  getContentFromCatalogPage() {
+
+
+    console.log('***********&&&&& 章节目录传递来的 this.cid = ', this.cid)
+    bookContentApi(this.bookId, this.cid)
+      .then((ret) => {
+        console.log('***********&&&&& 章节目录传递来的 this.cid 对应章节内容 ret', ret)
+        if (ret == null) {
+          this.hasMoreData = false
+        } else {
+          console.log('gg ret=', ret)
+          if (ret.isvip === 1 || ret.isvip === '1') {
+            this.hadJoinInVIPChapter = true
+          } else {
+            this.hadJoinInVIPChapter = false
+          }
+
+          //this.hadGetTheContentArr.push(this.cid)
+          console.log('***********&&&&&', ret)
+          const newRet = ret
+
+          if (this.chapterEndAdControRet.list[0].ad_id != undefined) {
+            newRet.nativeAdId = this.chapterEndAdControRet.list[0].ad_id
+          } else {
+            newRet.nativeAdId = '4503' //优先走4503
+          }
+          newRet.showAd = (!this.showChapterAd || this.userIsVIP) ? 0 : 1 //VIP免广告 showAd = 0
+          newRet.showSecondAd = 0 //优先级为2的广告默认不展示
+          newRet.showRetentionChapterAd = 0 //自留广告默认不展示
+          newRet.jsUrl =''
+          newRet.chapterRetentionData = {} //自留广告数据
+          newRet.showRemoveAdBtn = 0 //移除广告按钮
+          console.log('***********newRet&&&&&', newRet)
+          this.chapterName = newRet.title
+          this.content.push(newRet)
+          this.setBookBrowseCache()
+          this.setChapterCacheAndJoinArr()
+          this.showTitleAndFooter = false
+          this.showBookNameHeader = false
+        }
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        this.hasMoreData = false
+      })
+  },
+
+
+  //获取浏览记录数据
+  getBrowseCacheArr() {
+    const self = this
+    this.get_book_browse_arr = []
+    //获取浏览记录缓存数组
+    storage.get({
+      key: 'D',
+      success: data => {
+        if (data != '' && data != '[]' && data != null) {
+          this.get_book_browse_arr = this.get_book_browse_arr.concat(JSON.parse(data)).reverse()
+          console.log('阅读页获取浏览记录*********', this.get_book_browse_arr)
+          this.replaceChapter()
+        } else {
+          console.log('阅读页没有获取到浏览记录*********', this.get_book_browse_arr)
+          this.replaceChapter()
+        }
+      },
+      fail: function (data, code) {
+        console.log(`阅读页获取 浏览记录 handling fail, code = ${code}`)
+        self.replaceChapter()
+      }
+    })
+  },
+
+  replaceChapter() {
+    console.log('浏览记录*********', this.get_book_browse_arr)
+    for (let i = 0; i < this.get_book_browse_arr.length; i++) {
+      if (Number(this.get_book_browse_arr[i].id) === Number(this.bookId)) {
+        if (this.get_book_browse_arr[i].cid != '') {
+          console.log('更换为this.get_book_browse_arr[i].cid = ', this.get_book_browse_arr[i].cid)
+          this.cid = this.get_book_browse_arr[i].cid
+        }
+      }
+    }
+
+    console.log('更换最新cid之后***********bookId&&&&&this.cid = ', this.bookId, this.cid)
+    this.theMiniChapterId = this.cid
+    bookContentApi(this.bookId, this.cid)
+      .then((ret) => {
+        console.log('***********&&&&& 传递来的 this.cid =  ret == ', this.cid, ret)
+        if (ret == null) {
+
+          this.hasMoreData = false
+
+        } else {
+          if (ret.isvip === 1 || ret.isvip === '1') {
+            this.hadJoinInVIPChapter = true
+          } else {
+            this.hadJoinInVIPChapter = false
+          }
+          console.log('***********&&&&&', ret)
+          const newRet = ret
+          console.log('***********&&&&&  this.chapterEndAdControRet == ', this.chapterEndAdControRet)
+          if (this.chapterEndAdControRet.list[0].ad_id != undefined) {
+            newRet.nativeAdId = this.chapterEndAdControRet.list[0].ad_id
+          } else {
+            newRet.nativeAdId = '4503' //优先走4503
+          }
+          newRet.showAd = (!this.showChapterAd || this.userIsVIP) ? 0 : 1 //VIP免广告 showAd = 0
+          newRet.showSecondAd = 0 //优先级为2的广告默认不展示
+          newRet.showRetentionChapterAd = 0 //自留广告默认不展示
+          newRet.jsUrl =''
+          newRet.chapterRetentionData = {} //自留广告数据
+          newRet.showRemoveAdBtn = 0 //移除广告按钮
+          console.log('***********newRet&&&&&', newRet)
+
+          this.chapterName = newRet.title
+          this.content.push(newRet)
+
+          this.setBookBrowseCache()
+          this.setChapterCacheAndJoinArr()
+          this.showTitleAndFooter = false
+          this.showBookNameHeader = false
+        }
+      })
+      .catch((error) => {
+        this.hasMoreData = false
+        console.log('error=', error)
+      })
+
+  },
+
+  appearfn(index) { //右上角章节名称显示
+    let currentContent = this.content[index]
+    this.chapterName = currentContent.title
+  },
+
+  //---------------下拉加载 & 上拉加载-------------------
+  scrollbottomContent() {
+
+    if (this.isGetNextContent) {
+      console.log('在获取中，不做操作')
+      //为了防止网络很慢时 多线程不按正常顺序返回的概率大的问题
+
+    } else {
+
+      this.isGetNextContent = true //获取中
+
+      let cid = Number(this.cid) + 1
+      this.cid = cid
+      scrollGetBookContentApi(this.bookId, this.cid)
+        .then((ret) => {
+          console.log('***********&&&&& 传递来的 this.cid =  ret == ', this.cid, ret)
+
+          if (ret.status === 301) {//message:'章节不存在'
+
+            if (this.cid > this.thisBookMaximumChapter) {
+              console.log('*********** this.cid > this.thisBookMaximumChapter', this.cid, this.thisBookMaximumChapter)
+              if (this.thisBookMaximumChapter != 0) {
+
+                //此时为阅读完了
+                this.hasMoreData = false
+                const self = this
+                storage.get({
+                  key: 'userLoginToken',
+                  success: data => {
+                    console.log('获取保存的token', data)
+                    if (data != '') {
+                      //发送读完信息
+                      let postData = { 'token': data, 'book_id': this.bookId }
+                      console.log('添加读完的书', postData)
+                      userAddCompleteBookApi(postData)
+                        .then((ret) => {
+                          let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+                          updateUserInfoChannel.postMessage('autoLogin')
+                          console.log('添加读完的书 ret =', ret)
+                        })
+                        .catch((error) => {
+                        })
+                    }
+                  }
+                })
+
+              } else {
+                //未获取到最大章节数
+                this.hasMoreData = false
+              }
+
+
+            } else {
+              this.isGetNextContent = false ////章节顺序配置跳跃了 继续请求下一章
+              this.scrollbottomContent()
+            }
+
+          } else if ((ret.status === 200) && Object.keys(ret.data).length > 0) {//message:'执行成功'
+
+            if (ret.data.isvip === 1 || ret.data.isvip === '1') {
+              this.hadJoinInVIPChapter = true
+            } else {
+              this.hadJoinInVIPChapter = false
+            }
+            console.log('***********&&&&&', ret.data)
+            let newRet = ret.data
+
+            if (this.chapterEndAdControRet.list[0].ad_id != undefined) {
+              newRet.nativeAdId = this.chapterEndAdControRet.list[0].ad_id
+            } else {
+              newRet.nativeAdId = '4503' //优先走4503
+            }
+
+            // newRet.nativeAdId = '4374'//test data
+            newRet.showAd = (!this.showChapterAd || this.userIsVIP) ? 0 : 1 //VIP免广告 showAd = 0
+            newRet.showSecondAd = 0 //优先级为2的广告默认不展示
+            newRet.showRetentionChapterAd = 0 //自留广告默认不展示
+            newRet.jsUrl =''
+            newRet.chapterRetentionData = {} //自留广告数据
+            newRet.showRemoveAdBtn = 0 //移除广告按钮
+            // console.log('***********newRet&&&&&', newRet)
+            this.chapterName = newRet.title
+            this.content.push(newRet)
+            this.isGetNextContent = false //本次请求完成了 可以再请求下一章了
+            this.setBookBrowseCache()
+            this.setChapterCacheAndJoinArr()
+            this.showTitleAndFooter = false
+            this.showBookNameHeader = false
+
+          } else {
+            let cid = Number(this.cid) - 1
+            this.cid = cid
+            this.isGetNextContent = false   //其他情况 可请求下去 ？
+            return
+          }
+
+        })
+        .catch((error) => {
+          // this.hasMoreData = false //接口错误不能直接提示没有更多了
+          this.isGetNextContent = false //本次请求完成了 可以再次请求了  
+          //需将章节复位
+          let cid = Number(this.cid) - 1
+          this.cid = cid
+          console.log('error=', error)
+        })
+    }
+
+
+  },
+
+  refresh(e) {
+    // 更新刷新状态（属性refreshing的值从false改为true会触发refresh组件的状态更新，反之亦然）
+    this.isRefreshing = e.refreshing
+    let cid = Number(this.theMiniChapterId) - 1
+    this.theMiniChapterId = cid
+
+    if (cid < Number(this.theBookMinimumCid)) {
+      console.log('cid < Number(this.theBookMinimumCid)', cid, this.theBookMinimumCid)
+      this.hasTopMoreData = false
+      const self = this
+      setTimeout(function () {
+        prompt.showToast({
+          message: '亲，已经是第一章了'
+        })
+        self.isRefreshing = false
+      }, 500)
+
+    } else {
+      this.hasTopMoreData = true
+      bookContentApi(this.bookId, cid)
+        .then((ret) => {
+          console.log('***********&&&&& 传递来的 this.cid =  ret == ', this.cid, ret)
+          if (ret.isvip === 1 || ret.isvip === '1') {
+            this.hadJoinInVIPChapter = true
+          } else {
+            this.hadJoinInVIPChapter = false
+          }
+          console.log('***********&&&&&', ret)
+          const newRet = ret
+          if (this.chapterEndAdControRet.list[0].ad_id != undefined) {
+            newRet.nativeAdId = this.chapterEndAdControRet.list[0].ad_id
+          } else {
+            newRet.nativeAdId = '4503' //优先走4503
+          }
+          newRet.showAd = (!this.showChapterAd || this.userIsVIP) ? 0 : 1 //VIP免广告 showAd = 0
+          newRet.showSecondAd = 0 //优先级为2的广告默认不展示
+          newRet.showRetentionChapterAd = 0 //自留广告默认不展示
+          newRet.jsUrl =''
+          newRet.chapterRetentionData = {} //自留广告数据
+          newRet.showRemoveAdBtn = 0 //移除广告按钮
+          console.log('***********newRet&&&&&', newRet)
+          this.chapterName = newRet.title
+          this.content.unshift(newRet)
+          this.content = this.content.filter(item => item.index !== 0)
+          for (let index = this.content.length - 1; index > 0; index--) {
+            this.content.splice(index, 1)
+          }
+          this.cid = cid
+          this.setBookBrowseCache()
+          this.setChapterCacheAndJoinArr()
+          this.isRefreshing = false
+          this.hasMoreData = true
+        })
+        .catch((error) => {
+          console.log('error=', error)
+        })
+    }
+  },
+
+  //---------------引导开通VIP-------------------
+  openVipClick() {
+    this.showOpenVIPDialog = false
+    if (this.userHadLogin) {
+      //直接开通
+      router.push({
+        uri: 'MemberCenter'
+      })
+    } else {
+      //登录
+      router.push({
+        uri: '/Login',
+        params: {
+          isFrom: 'openVIP'
+        }
+      })
+    }
+  },
+  closeAD() {
+    //去广告 弹窗提示 需开通vip
+    if (!this.showOpenVIPDialog) {
+      this.showOpenVIPDialog = true
+    }
+  },
+  closeOpenVIPDialog() {
+    this.showOpenVIPDialog = false
+  },
+
+  //----跳目录页----
+  toCatalog() {
+    $umeng_stat.trackEvent('read_details_click_catalog', { user_id: this.IMEI, book_id: this.bookId })
+    router.push({
+      uri: '/Catalog',
+      params: {
+        bookId: this.bookId,
+        page: 1,
+        picUrl: this.picUrl,
+        bookName: this.bookName,
+        cid: this.cid
+      }
+    })
+  },
+  //用户滑动屏幕隐藏相关设置项
+  contentScroll(e) {
+    // console.log('list 在滑动================= = ', e)
+    //隐藏设置 防止遮挡广告
+    this.showTitleAndFooter = false
+    this.showBookNameHeader = false
+    this.showFont = false
+    this.showTopDiv = false
+  },
+  //-----------获取用户设置 （IMEI、字体、背景、颜色...）及亮度调节----------
+  //亮度调节
+  getBrightnessValue() {
+    const self = this
+    brightness.getValue({
+      success: function (ret) {
+        self.beginRightnessValue = ret.value
+        // console.log('获取亮度  我很开心  亮度 ==',self.beginRightnessValue)
+      },
+      fail: function (error) {
+        console.log('没能获取亮度  我很伤心')
+        // self.beginRightnessValue = error
+      }
+    })
+  },
+  getSliderValue(e) {
+    this.sliderValue = e.progress
+    this.beginRightnessValue = this.sliderValue
+    const self = this
+    brightness.setValue({
+      value: self.sliderValue,
+      success: function () {
+        console.log('亮度设置成功')
+      },
+      fail: function (err) {
+        console.log('亮度设置失败了 呜呜呜', err)
+      }
+    })
+  },
+
+  getUserSet() {
+    this.getBrightnessValue()//获取最初亮度
+    storage.get({
+      key: 'IMEI',
+      success: ret => {
+        this.IMEI = ret
+      }
+    })
+
+    storage.get({
+      key: 'btn',
+      success: data => {
+        if (data != '') {
+          let obj = JSON.parse(data)
+          this.color = obj.color
+          this.border = obj.color
+          this.contentColor = obj.contentColor
+        }
+      }
+    })
+    storage.get({
+      key: 'bgAndtext',
+      success: data => {
+        if (data != '') {
+          // debugger
+          let obj = JSON.parse(data)
+          this.backgroundColor = obj.backgroundColor
+          this.contentColor = obj.contentColor
+        }
+      }
+    })
+    storage.get({
+      key: 'dayAndNeightLogo',
+      success: data => {
+        if (data != '') {
+          // debugger
+          if (data == 'true') {
+            this.dayAndNeight = true
+          } else if (data == 'false') {
+            this.dayAndNeight = false
+          }
+        }
+      }
+    })
+    storage.get({
+      key: 'fontSize',
+      success: data => {
+        if (data != '') {
+          // debugger
+          let obj = JSON.parse(data)
+          this.fontSize = obj.fontSize
+          this.fontBigColor = obj.fontBigColor
+          this.fontBigBorder = obj.fontBigColor
+          this.fontStandardColor = obj.fontStandardColor
+          this.fontStandardBorder = obj.fontStandardBorder
+          this.fontSmallColor = obj.fontSmallColor
+          this.fontSmallBorder = obj.fontSmallBorder
+        }
+      }
+    })
+  },
+  // 设置字体、背景、颜色...
+  showTitleAndSetView() {
+    $umeng_stat.trackEvent('read_details_click_screen', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId }) //统计内容详情页点击屏幕次数
+    if (!this.showTitleAndFooter) {
+      this.showTitleAndFooter = true
+      this.showBookNameHeader = true
+      this.showFont = false
+      if (this.topUnLock) {
+        this.showTopDiv = true
+      }
+    } else {
+      this.showTitleAndFooter = false
+      this.showBookNameHeader = false
+      this.showFont = false
+      this.showTopDiv = false
+    }
+
+    if (this.showWancaBanAd || this.showGioneeBanAd || this.show_banner_Retention_Ad) {
+      this.setStyle = 'set'
+      this.footerStyle = 'footer'
+      this.contentLoadMoreStyle = 'content-load-more'
+
+    } else {
+      this.setStyle = 'set-else'
+      this.footerStyle = 'footer-else'
+      this.contentLoadMoreStyle = 'content-load-more-else'
+    }
+  },
+  setFont() {
+    // 章节内容页点击设置	√	read_details_click_setting
+    $umeng_stat.trackEvent('read_details_click_setting', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    this.showFont = true
+  },
+  fontSmaller() {
+    // 章节内容页点击设置调节字号	√	read_details_click_font_size
+    $umeng_stat.trackEvent('read_details_click_font_size', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    this.fontSize = '35px'
+    this.fontBigColor = ''
+    this.fontBigBorder = ''
+    this.fontStandardColor = ''
+    this.fontStandardBorder = ''
+    this.fontSmallColor = 'red'
+    this.fontSmallBorder = 'red'
+    let obj = {
+      fontSize: this.fontSize,
+      fontBigColor: this.fontBigColor,
+      fontBigBorder: this.fontBigBorder,
+      fontStandardColor: this.fontStandardColor,
+      fontStandardBorder: this.fontStandardBorder,
+      fontSmallColor: this.fontSmallColor,
+      fontSmallBorder: this.fontSmallBorder
+    }
+    this.setFontSizeCache(obj)
+  },
+  fontStandard() {
+    // 章节内容页点击设置调节字号	√	read_details_click_font_size
+    $umeng_stat.trackEvent('read_details_click_font_size', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    this.fontSize = '41px'
+    this.fontSmallColor = ''
+    this.fontSmallBorder = ''
+    this.fontStandardColor = 'red'
+    this.fontStandardBorder = 'red'
+    this.fontBigColor = ''
+    this.fontBigBorder = ''
+    let obj = {
+      fontSize: this.fontSize,
+      fontBigColor: this.fontBigColor,
+      fontBigBorder: this.fontBigBorder,
+      fontStandardColor: this.fontStandardColor,
+      fontStandardBorder: this.fontStandardBorder,
+      fontSmallColor: this.fontSmallColor,
+      fontSmallBorder: this.fontSmallBorder
+    }
+    this.setFontSizeCache(obj)
+  },
+  fontBigger() {
+    // 章节内容页点击设置调节字号	√	read_details_click_font_size
+    $umeng_stat.trackEvent('read_details_click_font_size', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    this.fontSize = '52px'
+    this.fontSmallColor = ''
+    this.fontSmallBorder = ''
+    this.fontStandardColor = ''
+    this.fontStandardBorder = ''
+    this.fontBigColor = 'red'
+    this.fontBigBorder = 'red'
+    let obj = {
+      fontSize: this.fontSize,
+      fontBigColor: this.fontBigColor,
+      fontBigBorder: this.fontBigBorder,
+      fontStandardColor: this.fontStandardColor,
+      fontStandardBorder: this.fontStandardBorder,
+      fontSmallColor: this.fontSmallColor,
+      fontSmallBorder: this.fontSmallBorder
+    }
+    this.setFontSizeCache(obj)
+  },
+  setBackground() {
+    // 章节内容页点击夜间模式	√	read_details_click_night
+    $umeng_stat.trackEvent('read_details_click_night', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+
+    if (this.dayAndNeight == true) {
+      this.backgroundColor = '#272A31'
+      this.color = ''
+      this.border = ''
+      this.contentColor = '#64676E'
+      let bgAndtextObj = {
+        contentColor: this.contentColor,
+        backgroundColor: this.backgroundColor
+      }
+      this.setBackgroundCache(bgAndtextObj)
+      let obj = {
+        color: this.color,
+        border: this.border
+      }
+      this.setSaveBtnDataCache(obj)
+      this.dayAndNeight = false
+      this.setDandAndNeightLogo()
+    } else if (this.dayAndNeight == false) {
+      this.backgroundColor = '#FCFCFC'
+      this.color = ''
+      this.border = ''
+      this.contentColor = ''
+      let bgAndtextObj = {
+        contentColor: this.contentColor,
+        backgroundColor: this.backgroundColor
+      }
+      this.setBackgroundCache(bgAndtextObj)
+
+      let obj = {
+        color: this.color,
+        border: this.border
+      }
+      this.setSaveBtnDataCache(obj)
+      this.dayAndNeight = true
+      this.setDandAndNeightLogo()
+    }
+  },
+  saveEyeColor(e) {
+    // 章节内容页点击设置勾选护眼模式	√	read_details_click_eyeprotectionmode
+    $umeng_stat.trackEvent('read_details_click_eyeprotectionmode', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+
+    this.setDandAndNeightLogo()
+    if (this.dayAndNeight == true) {
+      //白天背景与护眼背景交换
+      if (this.color == 'red') {
+        this.color = ''
+        this.border = ''
+        this.backgroundColor = '#FCFCFC'
+        this.contentColor = ''
+        let bgAndtextObj = {
+          contentColor: this.contentColor,
+          backgroundColor: this.backgroundColor
+        }
+        this.setBackgroundCache(bgAndtextObj)
+        let obj = {
+          color: this.color,
+          border: this.border
+        }
+        this.setSaveBtnDataCache(obj)
+      } else {
+        this.color = 'red'
+        this.border = 'red'
+        this.backgroundColor = '#C7EDCD'
+        this.contentColor = ''
+
+        let bgAndtextObj = {
+          contentColor: this.contentColor,
+          backgroundColor: this.backgroundColor
+        }
+        this.setBackgroundCache(bgAndtextObj)
+        let obj = {
+          color: this.color,
+          border: this.border
+        }
+        this.setSaveBtnDataCache(obj)
+      }
+    } else if (this.dayAndNeight == false) {
+      //夜间背景与护眼背景交换
+      if (this.color == 'red') {
+        this.color = ''
+        this.border = ''
+        this.backgroundColor = '#272A31'
+        this.contentColor = '#64676e'
+        let bgAndtextObj = {
+          contentColor: this.contentColor,
+          backgroundColor: this.backgroundColor
+        }
+        this.setBackgroundCache(bgAndtextObj)
+        let obj = {
+          color: this.color,
+          border: this.border
+        }
+        this.setSaveBtnDataCache(obj)
+      } else {
+        this.color = 'red'
+        this.border = 'red'
+        this.backgroundColor = '#C7EDCD'
+        this.contentColor = ''
+
+        let bgAndtextObj = {
+          contentColor: this.contentColor,
+          backgroundColor: this.backgroundColor
+        }
+        this.setBackgroundCache(bgAndtextObj)
+        let obj = {
+          color: this.color,
+          border: this.border
+        }
+        this.setSaveBtnDataCache(obj)
+      }
+    }
+  },
+  //
+  setBackgroundCache(bgAndtextObj) {
+    storage.set({
+      key: 'bgAndtext',
+      value: bgAndtextObj
+    })
+  },
+  setSaveBtnDataCache(obj) {
+    storage.set({
+      key: 'btn',
+      value: obj
+    })
+  },
+  setDandAndNeightLogo() {
+    storage.set({
+      key: 'dayAndNeightLogo',
+      value: this.dayAndNeight
+    })
+  },
+  setFontSizeCache(obj) {
+    storage.set({
+      key: 'fontSize',
+      value: obj
+    })
+  },
+
+  //-----缓存阅读记录----
+  setBookBrowseCache() {
+    //每次进入内容页、滑动加载、目录列表进入都要设置“单本”章节缓存
+    this.bookDetailInfo.id = this.bookId
+    this.bookDetailInfo.cid = this.cid
+    this.bookDetailInfo.cover = this.picUrl
+    this.bookDetailInfo.name = this.bookName
+    this.bookDetailInfo.chapterName = this.chapterName
+    this.bookDetailInfo.time = this.time
+    storage.set({
+      key: 'C',
+      value: this.bookDetailInfo
+    })
+  },
+  setChapterCacheAndJoinArr() {
+    //浏览章节缓存，并放入缓存章节对象数组
+    storage.get({
+      key: 'C',
+      success: data_c => {
+        storage.get({
+          key: 'D',
+          success: data => {
+            if (data != '') {
+              let pre_arr_cache = JSON.parse(data)
+              console.log('缓存数据pre_arr_cache', pre_arr_cache)
+              for (let i = 0; i < pre_arr_cache.length; i++) {
+                if (this.bookDetailInfo.id == pre_arr_cache[i].id) {
+                  pre_arr_cache.splice(i, 1)
+                }
+              }
+              console.log('阅读页缓存了本书及章节', this.bookDetailInfo, this.cid)
+              pre_arr_cache.push(this.bookDetailInfo)
+              storage.set({
+                key: 'D',
+                value: pre_arr_cache
+              })
+            } else {
+              this.join_book_browse_arr = []
+              this.join_book_browse_arr.push(JSON.parse(data_c))
+              storage.set({
+                key: 'D',
+                value: this.join_book_browse_arr
+              })
+            }
+          }
+        })
+      }
+    })
+  },
+
+  //---原生章尾广告 @ad-show="onadShow"  // @ad-click="onadClick"  // @ad-error="onadError" // @ad-closed="onadClosed"
+  onadShow(item, args) {
+    // 广告显示
+    console.log('onadShow ====== args = ', args)
+    let firstADid = this.chapterEndAdControRet.list[0].ad_id
+    let secondADid = this.chapterEndAdControRet.list[1].ad_id
+
+    if (Number(args.detail.adslot_id) === Number(firstADid)) {
+      item.showSecondAd = 0
+      item.showAd = 1
+    }
+    if (Number(args.detail.adslot_id) === Number(secondADid)) {
+      item.showSecondAd = 1
+      item.showAd = 0
+    }
+    item.showRemoveAdBtn = 1 //移除广告按钮
+
+    // 广告展示数
+    if (Number(args.detail.adslot_id) === 3928) {
+      $umeng_stat.trackEvent('wanka-ad_show_3928', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    } else if (Number(args.detail.adslot_id) === 4503) {
+      $umeng_stat.trackEvent('wanka-ad_show_4503', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    } else {
+      $umeng_stat.trackEvent('wanka-ad_show_chapter', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    }
+
+
+  },
+  onadClick(item, args) {
+    // 点击广告
+    if (Number(args.detail.adslot_id) === 3928) {
+      $umeng_stat.trackEvent('wanka-ad_click_3928', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    } else if (Number(args.detail.adslot_id) === 4503) {
+      $umeng_stat.trackEvent('wanka-ad_click_4503', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    } else {
+      $umeng_stat.trackEvent('wanka-ad_click_chapter', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    }
+  },
+  onadReady(item, args) {
+    //作为广告请求数的依据
+    console.log('onadReady ====== args = ', args)
+    if (Number(args.detail.adslot_id) === 3928) {
+      $umeng_stat.trackEvent('wanka-ad_request_3928', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    } else if (Number(args.detail.adslot_id) === 4503) {
+      $umeng_stat.trackEvent('wanka-ad_request_4503', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    } else {
+      $umeng_stat.trackEvent('wanka-ad_request_chapter', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    }
+  },
+  onadError(item, args) {
+    // 加载失败
+    console.log('onadError item ==  ',item, args)
+    let firstADid = this.chapterEndAdControRet.list[0].ad_id
+    let secondADid = this.chapterEndAdControRet.list[1].ad_id
+
+    item.showRemoveAdBtn = 0 //移除广告按钮
+    item.showAd = 0
+    if (Number(args.detail.adslot_id) === Number(secondADid)) {
+      item.showSecondAd = 0
+      //第二个也失败了 展示自留信息流广告
+      const self = this
+      //广告类型  1 信息流  2 开屏 3 banner
+      retentionAdApi(1)
+        .then((ret) => {
+          console.log('novelcontent page retentionAdApi ret ***********', ret)
+          if (ret.imgurl && ret.imgurl.length > 0) {
+            //自留广告成功埋点
+            $umeng_stat.trackEvent('own_chapterendad_request_success', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+            //请求成功自留广告展示
+            item.chapterRetentionData = ret
+            item.showRetentionChapterAd = 1
+            item.jsUrl = `javascript: void((function() {window.location.href=' `+ ret.jump_url + `'})())`
+          } else {
+            item.showRetentionChapterAd = 0
+            item.chapterRetentionData = {}
+          }
+
+        })
+        .catch((error) => {
+          
+          item.showRetentionChapterAd = 0
+          item.chapterRetentionData = {}
+          console.log('error=', error)
+        })
+
+
+    }
+
+    if (Number(args.detail.adslot_id) === Number(firstADid)) {
+      //最高优先级的id失败了 用第二个优先级的id
+      if (this.chapterEndAdControRet.list[1] != null && this.chapterEndAdControRet.list[1] != undefined) {
+        item.nativeAdId = this.chapterEndAdControRet.list[1].ad_id
+        item.showSecondAd = 1
+      }
+    }
+
+
+    if (Number(args.detail.adslot_id) === 3928) {
+      $umeng_stat.trackEvent('wanka-ad_error_3928', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    } else if (Number(args.detail.adslot_id) === 4503) {
+      $umeng_stat.trackEvent('wanka-ad_error_4503', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    } else {
+      $umeng_stat.trackEvent('wanka-ad_error_chapter', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    }
+  },
+  // 关闭广告
+  onadClosed(item, args) {
+    console.log('onadClosed ', args)
+    item.showAd = 0
+    item.showSecondAd = 0
+    item.showRemoveAdBtn = 0 //移除广告按钮
+  },
+  //----banner广告 @ad-show="onadShowBanner"  @ad-click="onadClickBanner" @ad-error="onadErrorBanner" @ad-closed="onadClosedBanner"
+  onadShowBanner(args) {
+    this.showWancaBanAd = true
+    this.showRemoveADBtn = true
+    this.showGioneeBannerAd = false
+    $umeng_stat.trackEvent('wanka-ad_show_4384', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+
+  },
+  onadClickBanner(args) {
+    this.showWancaBanAd = true
+    $umeng_stat.trackEvent('wanka-ad_click_4384', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+  },
+  onadBannerReady() {
+    //作为广告请求数的依据
+    $umeng_stat.trackEvent('wanka-ad_request_4384', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+  },
+  onadErrorBanner(args) {
+    console.log('banner广告失败--args--bannerAdCanShow---', args, this.bannerAdCanShow, this.showWancaBanAd)
+    this.showWancaBanAd = false
+    //请求自留广告
+    this.getRetentionBannerAdData()
+  },
+  onadClosedBanner(args) {
+    this.showWancaBanAd = false
+    this.showRemoveADBtn = false
+  },
+
+}
+</script>
+
+<style>
+@import "./index.css";
+</style>

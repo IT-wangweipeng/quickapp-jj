@@ -1,0 +1,100 @@
+<template>
+  <list class="list" onscrollbottom="scrollBottom" show="{{isSearched}}">
+    <block for="value in list">
+      <list-item type="listitem" class="listitem">
+        <div class="list-item-container" onclick="goToDetail(value.id)">
+          <image class="common-item-icon" src="{{value.cover}}"></image>
+          <div class="common-item-top-right-container">
+            <div class="common-item-top-right-title-container">
+              <text class="common-item-name">{{value.name}}</text>
+              <text class="common-item-score">{{value.score}}分</text>
+            </div>
+            <text class="common-item-brief">{{value.brief}}</text>
+            <div class="common-item-placeholder">
+            </div>
+            <div class="common-item-bottom-container">
+              <text class="common-item-author">{{value.author}}</text>
+              <text class="common-item-cateogry">{{value.category_name}}</text>
+            </div>
+          </div>
+        </div>
+      </list-item>
+    </block>
+
+    <list-item type="loadStatus" class="load-more">
+      <progress type="circular" show="{{ hasMore}}"></progress>
+      <text show="{{ hasMore}}">加载中...</text>
+      <text show="{{ hasMore==false }}">没有更多了~</text>
+    </list-item>
+  </list>
+</template>
+
+<script>
+import router from '@system.router'
+import { bookMarketViewMore } from '../../Common/api/api.js'
+
+export default {
+  private: {
+    size: 10,
+    start: 0,
+    list: [],
+    hasMore: false,
+    isLoadingData: false,
+  },
+  protected: {
+    id: null,
+    name: null,
+  },
+  onInit() {
+    this.$page.setTitleBar({ text: this.name })
+    this.getViewMoreData()
+  },
+  getViewMoreData() {
+    this.isLoadingData = true
+    bookMarketViewMore(this.id, this.size, this.start)
+      .then((ret) => {
+        this.isLoadingData = false
+        this.hasMore = ret.hasMore
+        this.list = this.list.concat(ret.list)
+
+      })
+      .catch((error) => {
+        this.isLoadingData = false
+        console.log('bookMarketViewMore error=', error)
+      })
+  },
+  goToDetail(bookId) {
+    router.push({
+      uri: 'BookDetail',
+      params: {
+        bookId: bookId,
+      }
+    });
+  },
+  scrollBottom() {
+    //加载下一页
+    if (!this.isLoadingData && this.hasMore) {
+      this.start = this.start + this.size
+      this.getViewMoreData()
+    }
+  },
+
+}
+</script>
+
+<style>
+@import "../index.css";
+.list-item-container {
+  margin-top: 50px;
+}
+
+.listitem {
+  margin-left: 32px;
+  margin-right: 32px;
+}
+.load-more {
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+</style>

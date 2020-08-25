@@ -1,0 +1,89 @@
+<template>
+  <div class="dislog">
+    <!--内容-->
+    <div class="dislog-pop">
+      <div class="dislog-cont">
+        <div class="dis-cont">
+          <image class="cont-img" src="{{con_URL}}"></image>
+        </div>
+        <text class="cont-btn" onclick="clickDialog">{{btn_Text}}</text>
+      </div>
+      <div class="dis-close">
+        <image class="close-img" onclick="cancelDialog" src="images/close-1.png"></image>
+      </div>
+    </div>
+  </div>
+</template>
+<style>
+/*弹窗*/
+.dislog {
+  position: fixed;
+  flex-direction: column;
+  z-index: 998;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.dislog-pop {
+  width: 80%;
+  flex-direction: column;
+}
+.dislog-cont {
+  width: 100%;
+  border-radius: 15px;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+.dis-cont {
+  margin: 18px;
+  height: 260px;
+  background-color: #2ac845;
+}
+.dis-close {
+  margin: 0 auto;
+}
+.close-img {
+  margin-top: 100px;
+  width: 100px;
+  height: 100px;
+}
+.cont-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 5px;
+}
+.cont-btn {
+  color: #f0f0f0;
+  width: 50%;
+  margin: 0 auto;
+  line-height: 60px;
+  font-size: 32px;
+  font-weight: bold;
+  text-align: center;
+  border-radius: 10px;
+  margin-top: 10px;
+  margin-bottom: 30px;
+  background-color: #0faeff;
+}
+</style>
+<script>
+export default {
+  props: {
+    con_URL: {
+      default: 'images/banner-1.png'
+    },
+    btn_Text: {
+      default: '立即阅读'
+    }
+  },
+  clickDialog() {
+    this.$emit('clickDialog')
+  },
+  cancelDialog() {
+    this.$emit('cancelDialog');
+  }
+};
+</script>

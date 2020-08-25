@@ -1,0 +1,370 @@
+<import name="emptyTip" src="../../Common/noNetworkTipView.ux"></import>
+<import name="titleBar" src="./../../Common/titleBar"></import>
+<import name="wanka-ad-view" src="./../../WankaAdSDK/dist/Ad-component/view"></import>
+<template>
+  <div class="doc-page">
+
+    <div class="title-wrap">
+      <div class="left-button" onclick="onLeftButtonClicked">
+        <image class="left-image" src="../../Common/images/arrow-left-0.png"></image>
+      </div>
+      <text class="title">{{title}}</text>
+      <div class="right-button" onclick="toSearch">
+        <image class="right-image" src="../../Common/images/search.png"></image>
+      </div>
+    </div>
+
+    <list class="list" onscrollbottom="scrollbottomList">
+      <block for="{{list}}">
+
+        <list-item type="adShow" class="content-item" if="{{($idx+1)%5===0}}" show="{{showAd}}">
+          <div class="ad-position" show="{{showAd}}">
+            <wanka-ad-view type="native" adslot_id="{{ nativeAdId }}" @ad-error="onadError" @ad-closed="onadClosed" @ad-show="onadShow"></wanka-ad-view>
+          </div>
+        </list-item>
+
+        <list-item type="product" class="content-item" else>
+          <!-- common item -->
+          <div class="common-item-container" onclick="toDetail($item.id)">
+            <image class="common-item-icon" src="{{$item.cover}}"></image>
+            <div class="common-item-top-right-container">
+              <div class="common-item-top-right-title-container">
+                <text class="common-item-name">{{$item.name}}</text>
+                <text class="common-item-score">{{$item.score + '分'}}</text>
+              </div>
+              <text class="common-item-brief">{{$item.brief}}</text>
+              <div class="common-item-placeholder">
+              </div>
+              <div class="common-item-bottom-container">
+                <text class="common-item-author">{{$item.author}}</text>
+                <text class="common-item-cateogry">{{$item.category_name}}</text>
+              </div>
+            </div>
+          </div>
+        </list-item>
+
+      </block>
+
+      <list-item type="loadStatus" class="load-status">
+        <progress type="circular" show="{{ hasMoreData }}"></progress>
+        <text show="{{ hasMoreData }}">加载中...</text>
+        <text show="{{ hasMoreData==false }}">没有更多了~</text>
+      </list-item>
+
+    </list>
+    <emptyTip if="{{showEmptyTip}}"></emptyTip>
+  </div>
+</template>
+
+
+<script>
+import prompt from '@system.prompt'
+import router from '@system.router'
+import fetch from '@system.fetch'
+import storage from '@system.storage'
+import device from '@system.device'
+
+// import ad from '@service.ad'
+
+import { bookCategoryListApi } from '../../Common/api/api.js'
+
+export default {
+  private: {
+    IMEI: '',
+    list: [],
+    pageStart: 0,
+    pageSize: 10,
+    getDt: false,
+    showAd: true,
+    hasMoreData: true,
+    showEmptyTip: true,
+
+    nativeAdId: '3928', // 广告位 id ：  正式是3928
+
+    insertAd: null,
+  },
+
+  protected: {
+    placeholder: '',
+    category_id: '',
+    title: '' || '书城',
+    sex: '' || 1,
+  },
+
+  onInit() {
+    this.getIMEI()
+    this.getData()
+
+    //  ad test
+    // let provider = ad.getProvider()
+    // if (provider === 'gionee') {
+    //   this.createInsertAd()
+    // }
+  },
+
+  // createInsertAd() {
+  //   this.insertAd = ad.createInsertAd({
+  //     adUnitId: '561'
+  //   })
+  //   this.insertAd.onError((s) => {
+  //     console.warn('onError ' + JSON.stringify(s))
+  //     prompt.showToast({
+  //       message: 'onError ' + JSON.stringify(s)
+  //     })
+  //   })
+  //   this.insertAd.onLoad((s) => {
+  //     console.warn('onLoad ' + JSON.stringify(s))
+  //     prompt.showToast({
+  //       message: 'onLoad ' + JSON.stringify(s)
+  //     })
+  //   })
+  //   this.insertAd.onClose((s) => {
+  //     console.warn('onClose ' + JSON.stringify(s))
+  //     prompt.showToast({
+  //       message: 'onClose ' + JSON.stringify(s)
+  //     })
+  //   })
+  // },
+
+  // showAd() {
+  //   this.insertAd.show(function (s) {
+  //     prompt.showToast({
+  //       message: 'show ' + JSON.stringify(s)
+  //     })
+  //   })
+  // },
+  // destoryAd() {
+  //   this.insertAd.destroy()
+  // },
+
+
+
+  //ad end
+  onShow() {
+    $umeng_stat.resume(this) //搜索页统计页面停留时间
+  },
+  onHide() {
+    $umeng_stat.pause(this)
+  },
+  getIMEI() {
+    //获取设备唯一标识 imei
+    storage.get({
+      key: 'IMEI',
+      success: ret => {
+        this.IMEI = ret
+      }
+    })
+  },
+
+  toSearch() {
+    router.push({
+      uri: 'Search'
+    })
+  },
+
+  //push详情页
+  toDetail(id) {
+    router.push({
+      uri: 'BookDetail',
+      params: {
+        bookId: id,
+      }
+    })
+  },
+
+  onLeftButtonClicked() {
+    //返回上一页
+    router.back()
+  },
+
+  scrollbottomList() {
+    if (this.getDt) {
+      this.getDt = false
+      this.pageStart += this.pageSize
+      this.getData()
+    }
+  },
+
+  getData() {
+
+    let data = {
+      tag_id: 0,
+      tag_ids: [],
+      composite: 0,
+      state: 0,
+      words: 0,
+      start: this.pageStart,
+      size: this.pageSize
+    }
+    bookCategoryListApi(this.category_id, this.sex, data)
+      .then((ret) => {
+        this.getDt = true
+        this.hasMoreData = ret.hasMore
+        this.list = this.list.concat(ret.list)
+        if (this.list.length > 0) {
+          this.showEmptyTip = false
+        }
+      })
+      .catch((error) => {
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+    this.getDt = true
+  },
+
+
+
+  /*******************广告 */
+  onadShow(args) {
+  },
+  // 加载失败
+  onadError(args) {
+    this.showAd = false
+  },
+  // 关闭广告
+  onadClosed(args) {
+    this.showAd = false
+  },
+}
+</script>
+
+
+<style>
+@import "../../Market/index.css";
+
+.demo-page {
+  flex-direction: column;
+  align-items: center;
+}
+
+.btn {
+  width: 550px;
+  height: 60px;
+  margin-top: 10px;
+  border-radius: 43px;
+  background-color: #09ba07;
+  font-size: 30px;
+  color: #ffffff;
+}
+
+.doc-page {
+  flex-direction: column;
+  background-color: #ffffff;
+}
+.title-wrap {
+  height: 100px;
+  padding-left: 10px;
+  padding-right: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+.left-button {
+  width: 60px;
+  height: 60px;
+  justify-content: center;
+  align-items: center;
+}
+.right-button {
+  width: 60px;
+  height: 60px;
+  justify-content: center;
+  align-items: center;
+}
+.left-image {
+  width: 40px;
+  height: 40px;
+}
+.right-image {
+  width: 40px;
+  height: 40px;
+}
+.title {
+  font-size: 40px;
+  color: #1e252f;
+}
+
+.list {
+  /* margin-top: 30px; */
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+.list .content-item {
+  width: 100%;
+}
+.list .content-item .img {
+  flex-shrink: 0;
+  width: 192px;
+  height: 270px;
+  padding: 10px 0;
+  border-radius: 6px;
+}
+
+.list .content-item .text-wrap {
+  flex-direction: column;
+  flex-grow: 1;
+  height: 270px;
+  /* margin-top: 20px;
+          margin-bottom: 20px; */
+  padding-left: 32px;
+  justify-content: center;
+}
+.list .content-item .text-wrap .top-line {
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: space-around;
+}
+.list .content-item .text-wrap .top-line .text-title {
+  lines: 2;
+  text-overflow: ellipsis;
+  font-size: 35px;
+  color: #000000;
+}
+
+.list .content-item .text-wrap .top-line .text-name {
+  text-overflow: ellipsis;
+  color: #ff6000;
+  justify-content: space-between;
+}
+.list .content-item .text-wrap .top-line .text-name .author {
+  color: #bebebe;
+  font-size: 30px;
+}
+
+.bookshelf {
+  width: 165px;
+  height: 40px;
+  font-size: 26px;
+  text-align: center;
+  border-radius: 20px;
+  color: #ff7200;
+  border-width: 4px;
+  border-color: #ff7200;
+}
+
+.list .content-item .text-wrap .top-line .text-desc {
+  lines: 2;
+  text-overflow: ellipsis;
+  font-size: 30px;
+  line-height: 45px;
+  color: #bebebe;
+}
+.load-status {
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  /* border-color: #bbbbbb;
+        border-bottom-width: 1px; */
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>

@@ -1,0 +1,135 @@
+<template>
+  <div>
+    <div if="{{ type === 'video' }}">
+      <div class="wk-ad-view wk-video-ad" show="{{ !!show_video_ad }}">
+        <div class="video-wrap wk-ad-column">
+          <div class="video-comp wk-ad-column">
+            <stack class="wk-ad-full wk-ad-column">
+              <div class="wrap wk-ad-full wk-ad-column">
+                <div class="video {{ orientation == 2 ? 'horizontal' : '' }}"><video id="video" src="{{ ad_video.video_url }}" autoplay="false" controls="false" muted="{{ muted_state }}" @finish="video_finished" @start="on_video_start" @timeupdate="on_time_update" @pause="on_video_paused"></video></div>
+              </div>
+            </stack>
+            <div class="wk-ad-full wk-ad-column tail-frame" show="{{ video_over }}">
+              <stack class="wk-ad-full">
+                <image show="{{ !!ad_video.end_card_url }}" class="wk-ad-full" src="{{ ad_video.end_card_url }}"></image>
+                <div class="tail-frame-content wk-ad-full wk-ad-column">
+                  <div class="tail-frame-content-wrap">
+                    <div class="wk-ad-flex-end">
+                      <div class="video-cloesd-btn" @click="close_video">
+                        <image class="cloesd-btn-icon" src="http://pic.wankacn.com/quickapp_ssp_sdk/img/dyn-close.png"></image>
+                      </div>
+                    </div>
+                    <div class="wk-ad-column wk-ad-f1 wk-ad-space-around">
+                      <div class="wk-ad-flex-center">
+                        <image class="video-tail-frame-logo" src="{{ ad_video.icon }}"></image>
+                      </div>
+                      <div class="wk-ad-column wk-ad-align-item-center"><text class="tail-fram-title">{{ ad_video.title }} </text><text class="tail-fram-subtitle">{{ ad_video.subtitle }}</text></div>
+                      <div class="wk-ad-flex-center"><input @click="ad_click" type="button" class="video-tail-frame-btn" value="{{ btntxt }}" /></div>
+                    </div>
+                  </div>
+                </div>
+              </stack>
+            </div>
+            <div class="mask wk-ad-full {{ orientation == 2 ? 'horizontal-wrap' : 'vertcail-wrap' }}" show="{{ video_start }}">
+              <div class="video-menu-wrap">
+                <div class="video-muted" @click="video_muted">
+                  <image class="wk-ad-full" src="{{ muted_icon }}"></image>
+                </div>
+              </div>
+              <div class="wk-ad-wfull video-banner">
+                <div class="wk-ad-wfull wanka-logo">
+                  <div class="video-banner-item banner-logo-wrap">
+                    <image class="video-banner-logo" src="{{ ad_video.icon }}"></image>
+                  </div>
+                  <div class="wk-ad-column video-banner-item banner-desc-wrap wk-ad-f1"><text class="video-title">{{ ad_video.title }} </text><text class="video-subtitle">{{ ad_video.subtitle }}</text></div>
+                  <div class="video-banner-btn-wrap wk-ad-column video-banner-item"><input @click="ad_click" class="video-banner-btn" type="button" value="{{ btntxt }}" /></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div else show="{{ is_show }}" class="wk-ad-view-wrap">
+      <div class="wk-ad-view open-screen-ad" id="open-screen-ad" if="{{ type==='openning' && is_show }}" @click="ad_click" @touchstart="ad_touchstart">
+        <stack class="ad-stack">
+          <div class="ad-img-wrap default">
+            <image class="ad-img" src="{{ openning_img }}" @error="img_load_err"></image>
+          </div>
+          <div class="ad-img-wrap">
+            <image class="ad-img real-ad-img" src="{{ img_url }}" @complete="img_load_completed" @error="img_load_err"></image>
+          </div>
+          <div class="ad-comlogo-wrap wk-ad-full" show="{{ !!img_url }}">
+            <image class="ad-logo ad-comlogo-img" src="{{ logo }}"></image>
+          </div>
+          <div class="ad-closed-btn-wrap"><text class="ad-closed-btn" @click="closed_open_ad">跳过 {{ Math.max( countdown , 0 ) }} </text></div>
+        </stack>
+      </div>
+      <div class="wk-ad-view insert-screen-ad" elif="{{ type === 'insert' && is_show }}">
+        <stack class="ad-item-wrap">
+          <div class="mask"></div>
+          <div class="ad-img-wrap">
+            <div class="ad-content" @click="ad_click" @touchstart="ad_touchstart">
+              <stack class="ad-stack">
+                <div class="ad-img-wrap">
+                  <image class="ad-img" src="{{ img_url }}" @complete="img_load_completed" @error="img_load_err"></image>
+                </div>
+                <div class="ad-comlogo-wrap wk-ad-full">
+                  <image class="ad-comlogo-img" src="{{ logo }}"></image>
+                </div>
+                <div class="ad-closed-btn-wrap">
+                  <div class="wk-ad-hfull wk-ad-pl32 wk-ad-start wk-ad-column closed_ad_btn" @click="close_ad">
+                    <image class="ad-closed" src="{{ closed }}"></image>
+                  </div>
+                </div>
+              </stack>
+            </div>
+          </div>
+        </stack>
+      </div>
+      <div class="wk-ad-view banner-ad {{ position_class }}" elif="{{ type ==='banner' && is_show }}" @click="ad_click" @touchstart="ad_touchstart">
+        <stack class="ad-item-wrap">
+          <div class="wk-ad-start wk-ad-full">
+            <div class="wk-ad-title-wrap wk-ad-column" if="{{ img_position == 'right' && creative_type == 3 }}"><text class="wk-ad-title wk-ad-title-fs" style="{{ title_style }}">{{ ad_title }}</text><text class="wk-ad-pb16 wk-ad-subtitle-fs" style="{{ subtitle_style }}">{{ ad_subtitle }}</text></div>
+            <div class="{{ banner_mix_class }}">
+              <image class="ad-img" src="{{ img_url }}" @complete="img_load_completed" @error="img_load_err"></image>
+            </div>
+            <div class="wk-ad-title-wrap wk-ad-column" if="{{ img_position == 'left' && creative_type == 3 }}"><text class="wk-ad-title wk-ad-title-fs" style="{{ title_style }}">{{ ad_title }}</text><text class="wk-ad-pb16 wk-ad-subtitle-fs" style="{{ subtitle_style }}">{{ ad_subtitle }}</text></div>
+          </div>
+          <div class="ad-comlogo-wrap wk-ad-full">
+            <image class="ad-comlogo-img" src="{{ logo }}"></image>
+          </div>
+          <div class="ad-closed-btn-wrap wk-ad-hfull">
+            <div class="banner-ad-closed-btn wk-ad-hfull wk-ad-pl32 closed_ad_btn" @click="close_ad">
+              <image class="ad-closed" src="{{ closed }}"></image>
+            </div>
+          </div>
+        </stack>
+      </div>
+      <div class="wk-ad-view wk-native-ad" elif="{{ type === 'native' && is_show }}" @click="ad_click" @touchstart="ad_touchstart">
+        <stack class="ad-item-wrap ad-img-and-desc-wrap">
+          <div class="ad-img-wrap {{ ad_native.type != 2 ? 'wk-ad-column' : 'wk-ad-row' }}">
+            <div show="{{ ad_native.type != 2 && !!ad_title }}" class="native-top-title"><text style="{{ title_style }}" class="native-top-title-text wk-ad-title-fs">{{ ad_title }}</text></div>
+            <div class="wk-ad-f1 wk-ad-full">
+              <div for="img_url" class="wk-ad-full {{ native_class_name }}">
+                <div show="{{ ad_native.type == 2 && img_url.length == 1 && img_position == 'right' }}" class="wk-ad-native-title-wrap wk-ad-column"><text style="{{ title_style }}" class="wk-ad-pb16 wk-ad-title-fs mix-text"> {{ ad_title }}</text></div>
+                <div class="native-img-wrap wk-ad-full {{ $idx == 0 ? '' : 'wk-ad-pl8' }}" style="{{ computed_mix_img_style }}">
+                  <image class="ad-img" src="{{ $item.url }}" @complete="img_load_completed($item)" @error="img_load_err"></image>
+                </div>
+                <div show="{{ ad_native.type == 2 && img_url.length == 1 && img_position == 'left' }}" class="wk-ad-native-title-wrap wk-ad-column"><text style="{{ title_style }}" class="wk-ad-pb16 wk-ad-pr16 wk-ad-title-fs mix-text">{{ ad_title }}</text></div>
+              </div>
+            </div>
+          </div>
+          <div class="ad-comlogo-wrap wk-ad-full">
+            <image class="ad-comlogo-img" src="{{ logo }}"></image>
+          </div>
+          <div class="ad-closed-btn-wrap wk-ad-hfull">
+            <div class="native-ad-closed-btn wk-ad-pl32 wk-ad-align-start closed_ad_btn" @click="close_ad">
+              <image class="ad-closed" src="{{ closed }}"></image>
+            </div>
+          </div>
+        </stack>
+      </div>
+    </div>
+  </div>
+</template><script src="./js/index.js"></script><style src="./css/wan-ad.css"></style>

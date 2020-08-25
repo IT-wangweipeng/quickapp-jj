@@ -1,0 +1,33 @@
+.category-page {
+  display: flex;
+  flex-direction: column;
+}
+.category-page-div{
+  flex-direction: column;
+}
+.refresh {
+  flex-direction: column;
+}
+.category-list {
+  flex-direction: column;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.list-item {
+  margin: 15px;
+  border: 1px;
+  border-radius: 3px;
+  border-color: #d3d3d3;
+}
+.image-item {
+  margin: 5px;
+  width: 130px;
+  height: 173px;
+  border-color: #f4f4f4;
+  border-radius: 6px;
+}
+
+.txt {
+  margin-left: 15px;
+}

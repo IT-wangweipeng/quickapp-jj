@@ -1,0 +1,199 @@
+<import name="titleBar" src="../../Common/titleBar"></import>
+
+<template>
+  <div class="display">
+    <titleBar title="" onleft-button-clicked="skipSexSet" left-button="../../Common/images/arrow-left-0.png" right-Text="{{jump}}" onright-button-clicked="skipSexSet">
+    </titleBar>
+    <text class="text-top">选择性别</text>
+    <text class="text-bottom">男女皆有好书看</text>
+    <div class="sex-buttons-div">
+
+      <div class="sexChoose" onclick="chooseMale">
+        <image src="../../Common/images/image_male.png" class="sex-image"></image>
+        <div class="sex-button" style="background-color: #F0F0F5;" if="{{!Male}}">
+          <text class="sex-type-text" style="color: #d3d3d3;">{{maleTxt}}</text>
+        </div>
+        <div class="sex-button" style="background-color: #FF0000;" else="{{Male}}">
+          <text class="sex-type-text" style="color: #FFFFFF;">{{maleTxt}}</text>
+        </div>
+      </div>
+
+      <div class="sexChoose" onclick="chooseFemale">
+        <image src="../../Common/images/image_female.png" class="sex-image"></image>
+        <div class="sex-button" style="background-color: #F0F0F5;" if="{{!Female}}">
+          <text class="sex-type-text" style="color: #d3d3d3;">{{femaleTxt}}</text>
+        </div>
+        <div class="sex-button" style="background-color: #FF0000;" else="{{Female}}">
+          <text class="sex-type-text" style="color: #FFFFFF;">{{femaleTxt}}</text>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<style>
+.display {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-top {
+  font-size: 70px;
+  margin-top: 100px;
+  color: #000000;
+  align-content: center;
+  align-self: center;
+}
+.text-bottom {
+  font-size: 35px;
+  margin-top: 20px;
+  color: #d3d3d3;
+  align-content: center;
+  align-self: center;
+}
+
+.sex-buttons-div {
+  flex-direction: row;
+  margin-top: 150px;
+  justify-content: space-around;
+}
+.sexChoose {
+  flex-direction: column;
+}
+.sex-image {
+  width: 182px;
+  height: 192px;
+}
+
+.sex-button {
+  width: 182px;
+  height: 70px;
+  margin-top: 70px;
+  border-radius: 60px;
+  justify-content: center;
+  align-items: center;
+}
+.sex-type-text {
+  font-size: 35px;
+}
+</style>
+
+<script>
+import { updateUserInfoApi } from '../../Common/api/api.js'
+
+import router from '@system.router'
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+
+
+
+export default {
+  private: {
+    jump: '跳过',
+    maleTxt: '男生',
+    femaleTxt: '女生',
+    userToken: '',
+    userInfoData: {},
+    Female: false,
+    Male: false,
+  },
+
+  protected: {
+    isFrom: 'mine'
+  },
+
+  onInit() {
+    this.userToken = this.$app.$def.token
+    this.userInfoData = this.$app.$def.userInfo
+  },
+
+  chooseMale() {
+    this.Male = true
+    this.Female = false
+    this.uploadUserSex(1)
+  },
+
+  chooseFemale() {
+    this.Male = false
+    this.Female = true
+    this.uploadUserSex(2)
+  },
+
+  uploadUserSex(sex) {
+    //设置用户性别
+    let userUpdateData = {
+      token: this.userToken,
+      id: this.userInfoData.id,
+      sex: sex
+    }
+    let JSONStr = JSON.stringify(userUpdateData)
+    updateUserInfoApi(JSONStr)
+      .then((ret) => {
+        console.log('更新男女成功---------------ret', ret)
+        let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+        updateUserInfoChannel.postMessage('autoLogin')
+
+        if (this.isFrom == 'openVIP') {
+
+          router.replace({
+            uri: 'Mine/PreferenceSetUp',
+            params: {
+              isFromeMine: '2',
+              isFrom: 'openVIP'
+            }
+          })
+
+        } else {
+
+          router.push({
+            uri: 'Mine/PreferenceSetUp',
+            params: {
+              isFromeMine: '2'
+            }
+          })
+        }
+
+
+      })
+      .catch((error) => {
+        console.log('更新男女失败', error)
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  onBackPress() {
+    return true
+  },
+
+  skipSexSet() {
+    this.skipAndBackMetod()
+  },
+
+  skipAndBackMetod() {
+    let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+    updateUserInfoChannel.postMessage('autoLogin')
+
+    if (this.isFrom == 'openVIP') {
+
+      router.replace({
+        uri: 'MemberCenter'
+      })
+
+    } else {
+      //书城
+      let skipSexSetChannel = new BroadcastChannel('userSkipSexSetChannel')
+      skipSexSetChannel.postMessage('userSkipSexSetChannel')
+
+      router.back({
+        path: '/TabBar'
+      })
+    }
+  }
+
+}
+</script>
+
+

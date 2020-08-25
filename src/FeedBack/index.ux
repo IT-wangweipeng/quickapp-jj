@@ -1,0 +1,157 @@
+<import name="titleBar" src="../Common/titleBar"></import>
+<template>
+  <div class="doc-page">
+    <!-- 自定义title -->
+    <div class="title">
+      <titleBar title="{{titleName}}" onleft-button-clicked="back" left-button="../Common/images/arrow-left-0.png"></titleBar>
+    </div>
+    <text class="fb-text-top">欢迎给我们反馈您的使用感受和建议</text>
+    <textarea id="txt_content" maxlength="200" placeholder="请填写意见反馈内容" class="fb-content" @change="textAreaChange()">{{ content }}</textarea>
+    <input id="txt_contact" maxlength="30" placeholder="联系方式：QQ/手机号" class="fb-contact" @change="inputChange()" value="{{contact}}" />
+    <text class="fb-text-top">留下您的联系方式有助于我们沟通解决问题，仅工作人员可见。您也可以直接联系客服QQ:2420248161,成为我们的首席体验师，更有精美奖品等着您哦~</text>
+    <div class="login-button-can" onclick="sendFeedBack()" show="{{ infoRight }}">
+      <text class="login-text">提交</text>
+    </div>
+
+  </div>
+</template>
+<style lang="less">
+@import "./../Common/css/common.css";
+
+.doc-page {
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.fb-text-top {
+  margin-left: 20px;
+  margin-right: 20px;
+  margin-top: 20px;
+  font-size: 28px;
+  color: #000000;
+}
+.fb-content {
+  height: 450px;
+  margin: 20px;
+  padding: 5px;
+  border-radius: 10px;
+  border-color: #bbbbbb;
+  border-width: 1px;
+  font-size: 28px;
+}
+
+.fb-contact {
+  height: 80px;
+  margin: 20px;
+  padding: 5px;
+  font-size: 28px;
+  border-radius: 10px;
+  border-color: #bbbbbb;
+  border-width: 1px;
+}
+
+.login-button-can {
+  flex-direction: column;
+  justify-content: center;
+  height: 80px;
+  margin-top: 80px;
+  margin-left: 80px;
+  margin-right: 80px;
+  border-radius: 50px;
+  background-color: rgb(255, 75, 63);
+  align-items: center;
+}
+.login-text {
+  font-size: 35px;
+  color: #ffffff;
+}
+</style>
+<script>
+import { feedBackApi } from '../Common/api/api.js'
+import prompt from '@system.prompt'
+import router from '@system.router'
+import fetch from '@system.fetch'
+import storage from '@system.storage'
+import share from '@system.share'
+import device from '@system.device'
+import clipboard from '@system.clipboard'
+
+export default {
+  private: {
+    IMEI: '',
+    uname: '',
+    content: '',
+    contact: '',
+    titleName: '用户反馈'
+  },
+  onInit() {
+    //获取设备id即IMEI
+    this.getIMEI()
+  },
+  onShow() {
+    $umeng_stat.resume(this)
+  },
+  onHide() {
+    $umeng_stat.pause(this)
+  },
+  back() {
+    router.back()
+  },
+  getIMEI() {
+    //获取设备唯一标识 imei
+    storage.get({
+      key: 'IMEI',
+      success: ret => {
+        this.IMEI = ret
+      }
+    })
+  },
+  inputChange(e) {
+    this.contact = e.value
+  },
+  textAreaChange(e) {
+    this.content = e.value
+  },
+
+  sendFeedBack() {
+    //用户反馈提交按钮点击
+    $umeng_stat.trackEvent('feedback_submit_click', { user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    if (this.content != '' && this.content.length > 0) {
+
+      let postData = {
+        'contact': this.contact,
+        'contents': this.content
+      }
+      feedBackApi(postData)
+        .then((ret) => {
+          prompt.showToast({
+            message: `反馈成功，谢谢`,
+            duration: 1
+          })
+          router.back()
+        })
+        .catch((error) => {
+          prompt.showToast({
+            message: `反馈失败，请稍后重试，谢谢`,
+            duration: 1
+          })
+        })
+
+    } else {
+      prompt.showToast({
+        message: `请输入反馈内容再提交!`,
+        duration: 1
+      })
+    }
+  },
+
+  copyQQ() {
+    clipboard.set({
+      text: this.QQ
+    })
+    prompt.showToast({
+      message: `已复制成功!`
+    })
+  }
+}
+</script>

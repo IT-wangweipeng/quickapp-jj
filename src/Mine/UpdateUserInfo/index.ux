@@ -1,0 +1,329 @@
+<import name="titleBar" src="../../Common/titleBar"></import>
+
+<template>
+  <div class="display">
+    <titleBar title="{{titleName}}" onleft-button-clicked="back" left-button="../../Common/images/arrow-left-0.png"></titleBar>
+    <div style="background-color: #eeeeee;width:100%;height:1px;"></div>
+
+    <!-- <div id="image" class = "item">
+
+    </div> -->
+
+    <div id="nick" class="item" onclick="clickChangeNick()">
+      <text class="item-title">昵称</text>
+      <text class="item-content">{{decodeURIComponent(userNickName)}}</text>
+      <image class="item-arrow-right" src="../../Common/images/image_arrow_right.png"></image>
+    </div>
+
+    <div id="sex" class="item" onclick="clickChangeSex()">
+      <text class="item-title">性别</text>
+      <text class="item-content">{{sexText}}</text>
+      <image class="item-arrow-right" src="../../Common/images/image_arrow_right.png"></image>
+    </div>
+
+    <!-- 修改昵称 -->
+    <div class="mask-view" style="{{showChangeNickView}}">
+      <div class="nick-view-div">
+        <text class="nick-view-title">输入昵称</text>
+        <input id="nickInputId" type="text" class="nick-view-input" onchange="change" onenterkeyclick="enterkeyclick" maxlength="30" placeholder="{{decodeURIComponent(userNickName)}}"></input>
+        <div class="nick-view-button-div">
+          <div class="nick-view-button" onclick="cancelInputNick">
+            <text class="nick-view-button-text">取消</text>
+          </div>
+          <div class="nick-view-button" onclick="confirmNickName">
+            <text class="nick-view-button-text">确认</text>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 修改性别 -->
+    <div class="mask-view" style="{{showChangeSexView}}" onclick="hide">
+
+      <div class="sex-buttons-div">
+
+        <div class="sexChoose" onclick="chooseMale">
+          <image src="../../Common/images/image_male.png" class="sex-image"></image>
+          <div class="sex-button" style="background-color: #F0F0F5;" if="{{!Male}}">
+            <text class="sex-type-text" style="color: #d3d3d3;">男生</text>
+          </div>
+          <div class="sex-button" style="background-color: #FF0000;" else="{{Male}}">
+            <text class="sex-type-text" style="color: #FFFFFF;">男生</text>
+          </div>
+        </div>
+
+        <div class="sexChoose" onclick="chooseFemale">
+          <image src="../../Common/images/image_female.png" class="sex-image"></image>
+          <div class="sex-button" style="background-color: #F0F0F5;" if="{{!Female}}">
+            <text class="sex-type-text" style="color: #d3d3d3;">女生</text>
+          </div>
+          <div class="sex-button" style="background-color: #FF0000;" else="{{Female}}">
+            <text class="sex-type-text" style="color: #FFFFFF;">女生</text>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</template>
+
+<style>
+.display {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  flex-direction: row;
+  height: 120px;
+  margin-left: 30px;
+  margin-right: 30px;
+  border-bottom-width: 1px;
+  border-bottom-color: #eeeeee;
+  align-items: center;
+}
+.item-title {
+  font-size: 35px;
+  width: 100px;
+  color: #000000;
+}
+.item-content {
+  font-size: 30px;
+  margin-left: auto;
+  margin-right: 30px;
+  color: #d3d3d3;
+}
+.item-arrow-right {
+  margin-right: 0px;
+  height: 36px;
+  width: 30px;
+}
+
+.mask-view {
+  flex-direction: column;
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(129, 127, 127, 0.4);
+  align-items: center;
+  justify-content: center;
+}
+
+.nick-view-div {
+  width: 500px;
+  height: 300px;
+  background-color: #ffffff;
+  border-radius: 20px;
+  flex-direction: column;
+  align-items: center;
+  transform: translateY(-200px);
+}
+.nick-view-title {
+  font-size: 35px;
+  color: #000000;
+  margin-top: 20px;
+}
+.nick-view-input {
+  margin-top: 30px;
+  height: 80px;
+  width: 450px;
+  border-radius: 10px;
+  border-width: 1px;
+  border-color: #eeeeee;
+  background-color: #f1f1f6;
+}
+.nick-view-button-div {
+  flex-direction: row;
+  margin-top: 50px;
+  justify-content: space-around;
+}
+.nick-view-button {
+  width: 225px;
+  height: 60px;
+  justify-content: center;
+  align-items: center;
+}
+.nick-view-button-text {
+  font-size: 30px;
+  color: #ff0000;
+}
+
+.sex-buttons-div {
+  flex-direction: row;
+  justify-content: space-around;
+  width: 500px;
+  height: 330px;
+  background-color: #ffffff;
+  border-radius: 20px;
+}
+.sexChoose {
+  flex-direction: column;
+}
+.sex-image {
+  margin-top: 30px;
+  width: 150px;
+  height: 158px;
+}
+
+.sex-button {
+  width: 150px;
+  height: 60px;
+  margin-top: 40px;
+  border-radius: 50px;
+  justify-content: center;
+  align-items: center;
+}
+.sex-type-text {
+  font-size: 35px;
+}
+</style>
+
+<script>
+import { updateUserInfoApi } from '../../Common/api/api.js'
+import router from '@system.router'
+import prompt from '@system.prompt'
+
+export default {
+  private: {
+    titleName: '资料编辑',
+    sexText: '男',
+    userInputNickName: '',
+    showChangeNickView: 'display: none',
+    showChangeSexView: 'display: none',
+    Male: false,
+    Female: false,
+  },
+
+  protected: {
+    userSex: 1,
+    userId: 0,
+    userNickName: '',
+    token: ''
+  },
+
+  onInit() {
+    if (Number(this.userSex) === 1) {
+      this.sexText = '男'
+      this.Male = true
+    } else if (Number(this.userSex) === 2) {
+      this.sexText = '女'
+      this.Female = true
+    } else {
+      this.sexText = '未设置'
+    }
+  },
+
+  change(e) {
+    if (e.value != '') {
+      this.userInputNickName = e.value
+    }
+  },
+
+  enterkeyclick(e) {
+    if (e.value != '') {
+      this.userInputNickName = e.value
+    }
+  },
+
+  cancelInputNick() {
+    this.showChangeNickView = 'display: none'
+    this.$element('nickInputId').focus({ focus: false })
+  },
+  confirmNickName() {
+    this.$element('nickInputId').focus({ focus: false })
+    this.showChangeNickView = 'display: none'
+    this.userNickName = this.userInputNickName
+    if (this.userInputNickName != '') {
+      let userUpdateData = {
+        'token': this.token,
+        'id': this.userId,
+        'nickname': this.userInputNickName
+      }
+      let JSONStr = JSON.stringify(userUpdateData)
+
+      updateUserInfoApi(JSONStr)
+        .then((ret) => {
+
+          this.showChangeNickView = 'display: none'
+
+          let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+          updateUserInfoChannel.postMessage('autoLogin')
+
+        })
+        .catch((error) => {
+          console.log('更新昵称失败', error)
+          this.showChangeNickView = 'display: none'
+          prompt.showToast({
+            message: '网络连接失败，请检查网络',
+          })
+        })
+    }
+  },
+
+
+  chooseMale() {
+    this.Male = true
+    this.Female = false
+    this.sexText = '男'
+    this.uploadUserSex(1)
+  },
+
+  chooseFemale() {
+    this.Male = false
+    this.Female = true
+    this.sexText = '女'
+    this.uploadUserSex(2)
+  },
+
+  uploadUserSex(sex) {
+    //设置用户性别
+    let userUpdateData = {
+      'token': this.token,
+      'id': this.userId,
+      'sex': sex
+    }
+    let JSONStr = JSON.stringify(userUpdateData)
+    updateUserInfoApi(JSONStr)
+      .then((ret) => {
+        this.showChangeSexView = 'display: none'
+        let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+        updateUserInfoChannel.postMessage('autoLogin')
+
+      })
+      .catch((error) => {
+        console.log('更新男女失败', error)
+        this.showChangeSexView = 'display: none'
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  onHide() {
+    this.$element('nickInputId').focus({ focus: false })
+  },
+
+
+  clickChangeNick() {
+    this.showChangeNickView = 'display: flex'
+    this.$element('nickInputId').focus({ focus: true })
+  },
+  clickChangeSex() {
+    this.showChangeSexView = 'display: flex'
+  },
+  hide() {
+    this.showChangeNickView = 'display: none'
+    this.showChangeSexView = 'display: none'
+    this.$element('nickInputId').focus({ focus: false })
+  },
+
+  back() {
+    router.back()
+  }
+
+}
+</script>
+
+

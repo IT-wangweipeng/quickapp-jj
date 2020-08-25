@@ -1,0 +1,82 @@
+<import name="titleBar" src="../Common/titleBar"></import>
+<template>
+  <div class="play">
+    <!-- <stack> -->
+      <web class="web-class" src="{{ url }}" id="web"></web>
+      <!-- <image class="back-image" src="../Common/images/arrow-left-0.png" onclick="back()"></image> -->
+      <titleBar class = "titleBar-class" title="{{titleName}}" onleft-button-clicked="back" left-button="../Common/images/arrow-left-0.png"></titleBar>
+    <!-- </stack> -->
+
+  </div>
+</template>
+
+<style>
+.play {
+  display: flex;
+  flex-direction: column;
+}
+
+.back-image {
+  position: fixed;
+  width: 70px;
+  height: 50px;
+  transform: rotateX(30deg);
+  transform: rotateY(30deg);
+}
+
+.titleBar-class{
+  position: fixed;
+  width: 100%;
+  height: 60px;
+}
+
+.web-class{
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+
+</style>
+
+<script>
+
+import router from '@system.router';
+
+export default {
+
+  data: {
+    url: '',
+    titleName: '',
+    type: 1,
+  },
+  onInit() {
+  },
+  back() {
+    if (this.type == 2) {
+      //开屏广告来的
+      router.replace({
+        uri: 'TabBar'
+      })
+
+    } else {
+      router.back()
+    }
+  },
+
+  onBackPress() {
+    if (this.type == 2) {
+      //开屏广告来的
+      router.replace({
+        uri: 'TabBar'
+      })
+
+    } else {
+      router.back()
+    }
+    return true
+  },
+}
+</script>
+
+

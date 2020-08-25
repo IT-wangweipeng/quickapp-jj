@@ -1,0 +1,307 @@
+{
+  "package": "com.techplus.read",
+  "name": "极佳小说",
+  "versionName": "1.6.3",
+  "versionCode": "43",
+  "minPlatformVersion": "1050",
+  "icon": "/Common/logo.png",
+  "features": [
+    {
+      "name": "system.prompt"
+    },
+    {
+      "name": "system.clipboard"
+    },
+    {
+      "name": "system.router"
+    },
+    {
+      "name": "system.shortcut"
+    },
+    {
+      "name": "system.share"
+    },
+    {
+      "name": "service.share",
+      "params": {
+        "wxKey": "wxa3de32551fff852e"
+      }
+    },
+    {
+      "name": "system.fetch"
+    },
+    {
+      "name": "system.storage"
+    },
+    {
+      "name": "system.file"
+    },
+    {
+      "name": "system.network"
+    },
+    {
+      "name": "system.device"
+    },
+    {
+      "name": "service.account"
+    },
+    {
+      "name": "system.webview"
+    },
+    {
+      "name": "system.wifi"
+    },
+    {
+      "name": "system.package"
+    },
+    {
+      "name": "system.request"
+    },
+    {
+      "name": "service.alipay"
+    },
+    {
+      "name": "service.wxpay"
+    }
+  ],
+  "permissions": [
+    {
+      "origin": "*"
+    }
+  ],
+  "config": {
+    "logLevel": "debug",
+    "data": {
+      "umeng_appkey": "5d3593904ca3578fcc000363",
+      "wanka_ad": {
+        "app_id": "1145",
+        "openning_id": "4035",
+        "openning_img": "http://d.gionee.com/nav/20190620/lockimage/20190620/20190620173216.jpg",
+        "delay": 3
+      }
+    }
+  },
+  "router": {
+    "entry": "LaunchPage",
+    "pages": {
+      "LaunchPage": {
+        "component": "index"
+      },
+      "TabBar": {
+        "component": "index"
+      },
+      "Market": {
+        "component": "index"
+      },
+      "Market/ViewMore": {
+        "component": "index"
+      },
+      "IconPages/Serialie": {
+        "component": "index"
+      },
+      "IconPages/Ranking": {
+        "component": "index"
+      },
+      "BookDetail": {
+        "component": "index"
+      },
+      "BookShelf": {
+        "component": "index"
+      },
+      "BookShelf/ReadHistory": {
+        "component": "index"
+      },
+      "Category": {
+        "component": "index"
+      },
+      "Category/CategoryListPage": {
+        "component": "index"
+      },
+      "ShortEssay": {
+        "component": "index"
+      },
+      "Mine": {
+        "component": "index"
+      },
+      "Mine/UserSexSetUp": {
+        "component": "index"
+      },
+      "Mine/PreferenceSetUp": {
+        "component": "index"
+      },
+      "Mine/UpdateUserInfo": {
+        "component": "index"
+      },
+      "Mine/ReadFinishPage": {
+        "component": "index"
+      },
+      "Login": {
+        "component": "index"
+      },
+      "Catalog": {
+        "component": "index"
+      },
+      "NovelContent": {
+        "component": "index"
+      },
+      "Search": {
+        "component": "index"
+      },
+      "WankaAdSDK/dist/Ad-detail": {
+        "component": "index"
+      },
+      "Comment": {
+        "component": "index"
+      },
+      "FeedBack": {
+        "component": "index"
+      },
+      "Web": {
+        "component": "index"
+      },
+      "WebView": {
+        "component": "index"
+      },
+      "About": {
+        "component": "index"
+      },
+      "MemberCenter": {
+        "component": "index"
+      },
+      "MemberCenter/OpenMember": {
+        "component": "index"
+      },
+      "MemberCenter/BuyRecord": {
+        "component": "index"
+      }
+    }
+  },
+  "display": {
+    "backgroundColor": "#FFFFFF",
+    "titleBarBackgroundColor": "#FFFFFF",
+    "titleBarTextColor": "#000000",
+    "windowSoftInputMode": "adjustPan",
+    "menu": true,
+    "pages": {
+      "LaunchPage": {
+        "menu": false,
+        "titleBar": false
+      },
+      "TabBar": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Market": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Market/ViewMore": {
+        "menu": false,
+        "titleBar": true
+      },
+      "IconPages/Serialie": {
+        "menu": false,
+        "titleBar": false
+      },
+      "IconPages/Ranking": {
+        "menu": false,
+        "titleBar": false
+      },
+      "BookShelf": {
+        "menu": false,
+        "titleBar": false
+      },
+      "BookDetail": {
+        "menu": false,
+        "titleBar": false
+      },
+      "BookShelf/ReadHistory": {
+        "menu": false,
+        "titleBar": false
+      },
+      "ShortEssay": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Category": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Category/CategoryListPage": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Mine": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Mine/UserSexSetUp": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Mine/PreferenceSetUp": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Mine/UpdateUserInfo": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Mine/ReadFinishPage": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Login": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Catalog": {
+        "menu": false,
+        "titleBar": false
+      },
+      "NovelContent": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Search": {
+        "menu": false,
+        "titleBar": false
+      },
+      "Comment": {
+        "menu": false,
+        "titleBar": false
+      },
+      "FeedBack": {
+        "menu": false,
+        "titleBar": false
+      },
+      "WankaAdSDK/dist/Ad-detail": {
+        "titleBar": false
+      },
+      "Web": {
+        "menu": false,
+        "titleBar": false
+      },
+      "WebView": {
+        "menu": false,
+        "titleBar": false
+      },
+      "About": {
+        "menu": false,
+        "titleBarText": "关于我们"
+      },
+      "MemberCenter": {
+        "menu": false,
+        "titleBar": false
+      },
+      "MemberCenter/OpenMember": {
+        "menu": false,
+        "titleBar": false
+      },
+      "MemberCenter/BuyRecord": {
+        "menu": false,
+        "titleBar": false
+      }
+    }
+  }
+}

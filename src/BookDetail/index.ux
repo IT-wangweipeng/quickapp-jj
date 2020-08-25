@@ -1,0 +1,810 @@
+<import name="wanka-ad-view" src="./../WankaAdSDK/dist/Ad-component/view"></import>
+<template>
+  <div class="doc_page">
+    <!-- 书籍封面和信息-->
+    <stack class="background">
+      <image class="backimg" src="{{detail && detail.cover}}"></image>
+      <div class="backMask"></div>
+      <div class="top-container">
+        <div class="titlebar">
+          <div class="left-button" onclick="goBack">
+            <image class="left-arrow" src="../Common/images/arrow-left-1.png"></image>
+          </div>
+        </div>
+        <div class="top">
+          <div class="left">
+            <text class="title">{{detail && detail.name}}</text>
+            <text class="author">{{detail && detail.author}}</text>
+            <div class="container_status">
+              <text class="complete_status1" if="detail && detail.complete_status === 1">已完结</text>
+              <text class="complete_status2" else>连载中</text>
+              <div class="seperate"></div>
+              <text class="word_count">{{detail && (detail.word_count / 10000).toFixed(1)}}万字</text>
+            </div>
+            <div>
+              <text class="category">{{detail && detail.category_name}}</text>
+            </div>
+          </div>
+          <image class="cover" src="{{detail && detail.cover}}">
+          </image>
+        </div>
+      </div>
+
+    </stack>
+
+    <!-- 人气，评分，在线人数-->
+    <div class="middle">
+      <div class="middle_item">
+        <text class="value" if="{{detail && detail.popularity < 10000}}">{{detail && detail.popularity}}</text>
+        <text class="value" elif="{{detail && detail.popularity > 1000000}}">100<span class="unit"> 万</span></text>
+        <text class="value" else>{{detail && (detail.popularity / 10000).toFixed(1)}}<span class="unit"> 万</span></text>
+        <text class="key">人气值</text>
+      </div>
+      <div class="seperate"></div>
+      <div class="middle_item">
+        <text class="value">{{detail && detail.score}}<span class="unit"> 分</span></text>
+        <text class="key">评分</text>
+      </div>
+      <div class="seperate"></div>
+      <div class="middle_item">
+        <text class="value">{{detail && detail.online_count}}<span class="unit"> 人</span></text>
+        <text class="key">同时在线人数</text>
+      </div>
+    </div>
+
+    <!-- 简介 -->
+    <div class="container_brief" onclick="changeLines">
+      <text class="brief" style="lines: {{lines}}">
+        {{detail && detail.brief}}
+      </text>
+      <div class="seperate"></div>
+    </div>
+
+    <!-- 目录-->
+    <div class="table" onclick="gotoCatalog">
+      <text class="catalog">目录</text>
+      <text class="count" if="{{detail && detail.chapter_count != 0}}">共{{detail && detail.chapter_count}}章</text>
+      <div class="space"> </div>
+      <text class="status1" if="{{detail && detail.complete_status === 1}}">已完结</text>\
+      <text class="status2" else>连载中</text>
+      <image class="arrow-rght-button-img" src="../Common/images/image_arrow_right.png"></image>
+    </div>
+    <div class="seperate_1"></div>
+    <!--  广告-->
+    <div class="ad-position" if="{{showAD}}">
+      <wanka-ad-view type="native" adslot_id="{{ nativeAdId }}" @ad-ready="onadReady" @ad-error="onadError" @ad-click="onadClick" @ad-closed="onadClosed" @ad-show="onadShow"></wanka-ad-view>
+    </div>
+    <div class="seperate_1" if={{showAD}}></div>
+
+    <!-- 自留广告组件 -->
+    <div class="retent-ad-div" if="{{showRetentionAd}}">
+      <stack>
+        <image class="retent-ad-img" src="{{retentimage}}" onclick="goToRetentionAdWebPage()"></image>
+        <!-- <a class="retent-ad-aUrl" href="{{jsUrl}}" onclick="goToBrowser">{{empty}}</a> -->
+        <image class="retent-ad-remove-image" src="../Common/images/close.png" onclick="removeRetentAd()"></image>
+      </stack>
+    </div>
+
+    <!--墙裂推荐 -->
+    <div class="recommend-container">
+      <!-- label -->
+      <div class="common-item-lab-container">
+        <text class="common-item-title">墙裂推荐</text>
+        <text class="common-item-right-title" onclick="changeClick(bookId)">换一批</text>
+      </div>
+      <!-- common item -->
+      <block for="{{value in detailRelated}}">
+        <div class="common-item-container" onclick="replaceDetail(value.id)">
+          <image class=common-item-icon src="{{value.cover}}"></image>
+          <div class="common-item-top-right-container">
+            <div class="common-item-top-right-title-container">
+              <text class="common-item-name">{{value.name}}</text>
+              <text class="common-item-score">{{value.score}}分</text>
+            </div>
+            <text class="common-item-brief">{{value.brief}}</text>
+            <div class="common-item-placeholder">
+            </div>
+            <div class="common-item-bottom-container">
+              <text class="common-item-author">{{value.author}}</text>
+              <text class="common-item-cateogry">{{value.category_name}}</text>
+            </div>
+          </div>
+        </div>
+      </block>
+
+      <!-- 版权信息 -->
+      <div class="copyright-wrap">
+        <text class="copyright-text">{{detail && detail.copyright_info}}</text>
+      </div>
+    </div>
+
+    <!-- 底部button栏-->
+    <div class="footer">
+      <div class="bookshelf" onclick="addToBookshelf()">
+        <text class="text">{{ addBookText }}</text>
+      </div>
+      <div class="read" onclick="toReadThisBook()">
+        <text class="text">免费阅读</text>
+      </div>
+
+      <!-- <div class="share">
+        <text class="text">分享</text>
+      </div> -->
+    </div>
+
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+import * as R from 'ramda'
+
+import { bookDetailApi, bookDetailRelated, bookFavoritesAddApi, adControlApi, bookLatelyReadApi, retentionAdApi } from '../Common/api/api.js'
+
+
+export default {
+  protected: {
+    bookId: null,
+  },
+  private: {
+    token: '',
+    hadLogin: false,
+    userInfoData: {},
+    showAD: false,
+    nativeAdId: '4100', //广告位id
+    lines: 3,
+    detail: null,
+    cid: 1,
+    picUrl: '',
+    bookName: '',
+    detailRelated: [],
+    haveAdded: false,  //是否已添加
+    addBookText: '加入书架',
+    bookShelfList: [],
+    join_bookshelf_cache_arr: [], //点击加入书架的书籍信息缓存数组
+    bookDetailInfo: {
+      id: '',
+      cover: '',
+      name: '',
+    },
+
+    showRetentionAd: false,//自留广告
+    retentimage: '',
+    retent_jump_url: '',
+    jsUrl:'',
+    empty:'   '
+  },
+  onInit() {
+    this.token = this.$app.$def.token
+    this.hadLogin = this.$app.$def.hadLogin
+
+    this.getCurrentBookCid()
+    this.getBookDetailData(this.bookId)
+    this.getBookDetailRealtedData(this.bookId)
+    this.getAdControlInfoFromApi(2)//详情页广告配置请求传2
+  },
+  onShow() {
+    this.getHadAddedBookList(this.bookId)
+    $umeng_stat.resume(this)
+  },
+  onHide() {
+    $umeng_stat.pause(this)
+  },
+  getBookDetailData(bookId) {
+    bookDetailApi(bookId)
+      .then((ret) => {
+        this.detail = ret
+        this.picUrl = ret.cover
+        this.bookName = ret.name
+      })
+      .catch((error) => {
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+  getBookDetailRealtedData(bookId) {
+    bookDetailRelated(bookId)
+      .then((ret) => {
+        this.detailRelated = ret
+      })
+      .catch((error) => {
+        console.log('bookDetailRelated error=', error)
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+  changeLines() {
+    if (this.lines == 3) {
+      this.lines = 200
+    } else {
+      this.lines = 3
+    }
+  },
+  changeClick() {
+    $umeng_stat.trackEvent('book_detail_refresh_item_clicked', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    this.getBookDetailRealtedData(this.bookId)
+  },
+  replaceDetail(bookId) {
+    $umeng_stat.trackEvent('book_detail_refresh_clicked', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    router.replace({
+      uri: 'BookDetail',
+      params: {
+        bookId: bookId,
+      }
+    })
+  },
+
+  onadReady() {
+    $umeng_stat.trackEvent('wanka-ad_request_4100', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+  },
+  // 广告显示
+  onadShow(args) {
+    $umeng_stat.trackEvent('wanka-ad_show_4100', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+  },
+  // 点击广告
+  onadClick(args) {
+    $umeng_stat.trackEvent('wanka-ad_click_4100', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+  },
+  // 加载失败
+  onadError(args) {
+    this.showAD = false
+    this.getRetentionAdData()
+  },
+  // 关闭广告
+  onadClosed(args) {
+    this.showAD = false
+  },
+
+  //获取已加入书架数据
+  getHadAddedBookList(bookId) {
+    this.bookShelfList = this.$app.$def.bookShelfList
+    for (let i = 0; i < this.bookShelfList.length; i++) {
+      if (this.bookShelfList[i].id == bookId) {
+        this.addBookText = '已加入书架'
+        this.haveAdded = true
+        break
+      }
+    }
+
+  },
+
+  getCurrentBookCid() {
+    const self = this
+    storage.get({
+      key: 'manyBookCid',
+      success: data => {
+        if (data != '' && data != '[]' && data != null) {
+
+          let getManyBookCidArr = JSON.parse(data)
+          let index = getManyBookCidArr.findIndex(item => item.bookId == this.bookId)
+          if (index > -1) {
+            this.cid = getManyBookCidArr[index].cid
+          } else {
+            this.cid = 1
+          }
+        } else {
+          this.cid = 1
+        }
+      },
+      fail: function (data, code) {
+        console.log(`详情页获取manyBookCid handling fail, code = ${code}`)
+        self.cid = 1
+      }
+    })
+  },
+
+  gotoCatalog() {
+    router.push({
+      uri: '/Catalog',
+      params: {
+        bookId: this.bookId,
+        picUrl: this.picUrl,
+        bookName: this.bookName,
+        cid: this.cid,
+        isFromDetail: true
+      }
+    })
+  },
+
+  toReadThisBook() {
+    $umeng_stat.trackEvent('book_detail_read_button_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+
+    if (this.haveAdded) {
+      //如果已经加入书架 需要做排序处理
+
+      let targetObject = {}
+      //将最后阅读的放第一个  分未登录和已登录两种情况
+      if (!this.hadLogin) {
+
+        this.pushToNovelContentPage()
+
+        console.log('未登录状态 -- 详情页书架数据 this.bookShelfList ==', this.bookShelfList)
+        console.log('-- 详情页this.bookId == ', this.bookId)
+        for (let i = 0; i < this.bookShelfList.length; i++) {
+          if (Number(this.bookShelfList[i].id) === Number(this.bookId)) {
+            targetObject = this.bookShelfList[i]
+            console.log('-- 详情页找到了该书 this.bookId == ', this.bookId)
+            this.bookShelfList.splice(i, 1) // 如果数据组存在该元素，则把该元素删除
+            break
+          }
+        }
+        if (Object.keys(targetObject).length > 0) {
+          this.bookShelfList.unshift(targetObject) // 再添加到第一个位置
+        }
+        console.log('未登录排好顺序的数组 -- this.bookList', this.bookShelfList)
+        storage.set({
+          key: 'bookShelfCache',
+          value: this.bookShelfList,
+          success: data => {
+            this.$app.$def.bookShelfList = this.bookShelfList
+            this.updateBookshelfList()
+          },
+          fail: (data, code) => {
+            console.log('未登录保存书架顺序 error=', code)
+          }
+        })
+      }
+
+
+      if (this.hadLogin) {
+
+        console.log('已登录状态 -- 书架页点击去看书')
+        let postData = {
+          'token': this.$app.$def.token,
+          'book_id': this.bookId,
+          'chapter_id': 0,
+          'chapter_sort': 0
+        }
+        bookLatelyReadApi(postData)
+          .then((ret) => {
+            console.log('书架页点击去看书 -- 已登录状态 --   add ret', ret)
+            if (ret.status == 200) {
+
+              for (let i = 0; i < this.bookShelfList.length; i++) {
+                if (Number(this.bookShelfList[i].id) === Number(this.bookId)) {
+                  targetObject = this.bookShelfList[i]
+                  this.bookShelfList.splice(i, 1) // 如果数据组存在该元素，则把该元素删除
+                  break
+                }
+              }
+              if (Object.keys(targetObject).length > 0) {
+                this.bookShelfList.unshift(targetObject) // 再添加到第一个位置
+              }
+              this.updateBookshelfList()
+              this.pushToNovelContentPage()
+
+            } else {
+              //其他情况不做处理
+              this.pushToNovelContentPage()
+            }
+
+          })
+          .catch((error) => {
+            console.log('bookLatelyReadApi error=', error)
+            this.pushToNovelContentPage()
+          })
+      }
+
+
+    } else {
+
+      this.pushToNovelContentPage()
+    }
+
+  },
+
+
+  pushToNovelContentPage() {
+    router.push({
+      uri: '/NovelContent',
+      params: {
+        bookId: this.bookId,
+        cid: this.cid,
+        picUrl: this.picUrl,
+        bookName: this.bookName
+      }
+    })
+  },
+
+  updateBookshelfList() {
+    this.$app.$def.bookShelfList = this.bookShelfList
+    let addBookToShelfSuccessChannel = new BroadcastChannel('addBookToShelfSuccess')
+    addBookToShelfSuccessChannel.postMessage('addBookToShelfSuccess')
+  },
+
+  addToBookshelf() {
+    if (!this.haveAdded && this.detail != null) {
+      $umeng_stat.trackEvent('book_detail_addshelf_button_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+      let addBook = this.detail
+      addBook.src = '../Common/images/select-0.png'
+      this.bookShelfList.unshift(addBook)
+
+      if (this.$app.$def.hadLogin) {
+        let postData = {
+          'token': this.$app.$def.token,
+          'book_id': this.bookId,
+          'chapter_id': 0,
+          'chapter_sort': 0
+        }
+        bookFavoritesAddApi(postData)
+          .then((ret) => {
+            this.updateUI()
+          })
+          .catch((error) => {
+            console.log('bookFavoritesAddApi error=', error)
+            prompt.showToast({
+              message: '网络连接失败，请检查网络',
+            })
+          })
+      } else {
+        storage.set({
+          key: 'bookShelfCache',
+          value: this.bookShelfList,
+          success: data => {
+            this.updateUI()
+          },
+          fail: (data, code) => {
+            console.log('addToBookshelf fail data=' + data + ',code=' + code)
+          }
+        })
+      }
+    }
+  },
+  updateUI() {
+    this.addBookText = '已加入书架'
+    this.haveAdded = true
+    this.$app.$def.bookShelfList = this.bookShelfList
+    let addBookToShelfSuccessChannel = new BroadcastChannel('addBookToShelfSuccess')
+    addBookToShelfSuccessChannel.postMessage('addBookToShelfSuccess')
+  },
+  goBack() {
+    router.back()
+  },
+
+  getAdControlInfoFromApi(num) {
+    adControlApi(num)
+      .then((ret) => {
+        if (ret != undefined) {
+          console.log('book detail wanca adret= ', ret)
+          //调试模拟数据
+          // let retM = { list: [{ type: 6, ad_id: '561', ad_type: 8 }] }
+          if (Number(ret.list[0].type) === 5) {
+            this.nativeAdId = ret.list[0].ad_id
+            this.showAD = true
+          } else {
+            this.nativeAdId = '4100'
+            this.showAD = true
+          }
+        } else {
+          this.nativeAdId = '4100'
+          this.showAD = true
+        }
+
+      })
+      .catch((error) => {
+        this.nativeAdId = '4100'
+        this.showAD = true
+        console.log('error=', error)
+      })
+  },
+
+  //请求自留广告
+  getRetentionAdData() {
+    const self = this
+    //广告类型  1 信息流  2 开屏 3 banner
+    retentionAdApi(1)
+      .then((ret) => {
+
+        console.log('detailpage retentionAdApi ret ***********', ret)
+        if (ret.imgurl && ret.imgurl.length > 0) {
+          //自留广告成功埋点
+          $umeng_stat.trackEvent('own_detailad_request_success', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+          this.showRetentionAd = true
+          this.retentimage = ret.imgurl
+          this.retent_jump_url = ret.jump_url
+          // this.jsUrl =  'javascript: void((function() {window.location.href='+this.retent_jump_url+'})())'
+          this.jsUrl = `javascript: void((function() {window.location.href=' `+ this.retent_jump_url + `'})())`
+
+        } else {
+
+          this.showRetentionAd = false
+        }
+
+      })
+      .catch((error) => {
+        this.showRetentionAd = false
+        console.log('error=', error)
+      })
+  },
+
+  removeRetentAd() {
+    this.showRetentionAd = false
+  },
+
+  goToBrowser(){
+    //自留广告点击埋点
+    console.log('跳转外部浏览器 去关注微信公众号')
+    $umeng_stat.trackEvent('own_detailad_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+  },
+
+  goToRetentionAdWebPage() {
+    //自留广告点击埋点
+    $umeng_stat.trackEvent('own_detailad_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    //链接
+    router.push({
+      uri: 'WebView',
+      params: {
+        url: this.retent_jump_url,
+      }
+    })
+  },
+}
+</script>
+
+<style>
+@import "../Market/index.css";
+.doc_page {
+  flex-direction: column;
+  background-color: #ffffff;
+}
+.background {
+  flex-direction: column;
+  height: 398px;
+  background-color: #ffffff;
+}
+.backimg {
+  width: 100%;
+  height: 100%;
+  resize-mode: cover;
+}
+.backMask {
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  opacity: 0.7;
+}
+.top-container {
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+}
+.titlebar {
+  width: 100%;
+  height: 100px;
+}
+.left-button {
+  width: 80px;
+  align-items: center;
+}
+.left-arrow {
+  margin-left: 20px;
+  width: 50px;
+  height: 50px;
+}
+.top {
+  padding-top: 36px;
+  padding-bottom: 36px;
+  justify-content: space-between;
+}
+.top .left {
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: 72px;
+}
+.top .left .title {
+  font-size: 40px;
+  color: #fff;
+}
+.top .left .author {
+  font-size: 25px;
+  color: #fff;
+}
+.top .left .container_status {
+  align-items: center;
+}
+.top .left .container_status .complete_status1 {
+  font-size: 25px;
+  color: #ffa60a;
+}
+.top .left .container_status .complete_status2 {
+  font-size: 25px;
+  color: #2a90ef;
+}
+.top .left .container_status .seperate {
+  width: 1px;
+  height: 16px;
+  margin-left: 20px;
+  margin-right: 20px;
+  background-color: #ffffff;
+}
+.top .left .container_status .word_count {
+  font-size: 25px;
+  color: #fff;
+}
+.top .left .category {
+  font-size: 22px;
+  color: #fff;
+  background-color: #f85836;
+  border-radius: 16px;
+  height: 36px;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 1px;
+}
+.top .cover {
+  width: 160px;
+  height: 226px;
+  margin-right: 72px;
+  margin-left: 20px;
+  border-radius: 6px;
+}
+.middle {
+  margin-top: 24px;
+  height: 80px;
+  justify-content: space-around;
+  align-items: center;
+}
+.middle .middle_item {
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+.middle .middle_item .value {
+  font-size: 38px;
+  color: #1e252f;
+}
+.middle .middle_item .key {
+  font-size: 22px;
+  color: #949ba5;
+}
+.middle .middle_item .unit {
+  font-size: 22px;
+  color: #1e252f;
+}
+.middle .seperate {
+  width: 1px;
+  height: 68px;
+  background-color: #dcdcdc;
+}
+.container_brief {
+  margin-top: 24px;
+  flex-direction: column;
+}
+.container_brief .brief {
+  margin-left: 32px;
+  margin-right: 32px;
+  font-size: 28px;
+  color: #545c67;
+  line-height: 40px;
+  text-overflow: ellipsis;
+}
+.container_brief .seperate {
+  margin-top: 24px;
+  height: 1px;
+  background-color: #f1f1f6;
+}
+.ad-position {
+  width: 100%;
+  height: 340px;
+}
+.container_table {
+  height: 96px;
+  padding-left: 32px;
+  padding-right: 32px;
+  align-items: center;
+}
+.table {
+  height: 96px;
+  align-items: center;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+.table .catalog {
+  font-size: 32px;
+  color: #1e252f;
+}
+.table .count {
+  margin-left: 28px;
+  font-size: 24px;
+  color: #1e252f;
+}
+.table .space {
+  flex: 1;
+}
+.table .status1 {
+  font-size: 28px;
+  color: #ffa60a;
+}
+.table .status2 {
+  font-size: 28px;
+  color: #2a90ef;
+}
+.arrow-rght-button-img {
+  height: 30px;
+  width: 30px;
+  margin-left: 10px;
+}
+.seperate_1 {
+  height: 16px;
+  background-color: #f1f1f6;
+}
+.seperate {
+  height: 1px;
+  background-color: #dcdcdc;
+}
+.copyright-wrap {
+  height: 100px;
+  align-items: center;
+}
+.copyright-text {
+  font-size: 24px;
+  color: #a0a7b2;
+}
+.recommend-container {
+  flex-direction: column;
+  margin-left: 32px;
+  margin-right: 32px;
+  margin-bottom: 100px;
+}
+.footer {
+  border-top-width: 1px;
+  border-top-color: #dcdcdc;
+  position: fixed;
+  bottom: 0px;
+  height: 100px;
+}
+.footer .bookshelf {
+  width: 50%;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+}
+.footer .bookshelf .text {
+  font-size: 30px;
+  color: #f85836;
+}
+.footer .read {
+  width: 50%;
+  justify-content: center;
+  align-items: center;
+  background-color: #f85836;
+}
+.footer .read .text {
+  font-size: 30px;
+  color: #ffffff;
+}
+.footer .share {
+  width: 30%;
+  justify-content: center;
+  align-items: center;
+  background-color: #ffffff;
+}
+.footer .share .text {
+  font-size: 30px;
+  color: #f85836;
+}
+
+.retent-ad-div {
+}
+.retent-ad-img {
+  width: 100%;
+  height: 350px;
+}
+.retent-ad-aUrl{
+  width: 100%;
+  height: 350px;
+}
+
+.retent-ad-remove-image {
+  height: 50px;
+  width: 50px;
+  position: absolute;
+  transform: translate(680px, 20px);
+}
+</style>
+
+

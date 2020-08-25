@@ -1,0 +1,555 @@
+<template>
+  <div class="main">
+    <!-- 标题 -->
+    <div class="title-item">
+      <div class="title-item-left-button">
+        <image class="title-item-left-image" src="../../Common/images/arrow-left-0.png" onclick="back"></image>
+      </div>
+      <text class="title-item-middle-text">{{userInfo.is_vip ? '续费会员' : '开通会员'}}</text>
+      <div class="title-item-right-button">
+        <!-- <text class="title-item-right-text" onclick="toBuyRecord">购买记录</text> -->
+      </div>
+    </div>
+    <!-- 选择列表 -->
+    <list class="list-content">
+      <block for="(index, item) in listData">
+        <list-item type="listItem">
+          <div class="list-item {{index === curIndex ? 'list-item-select' : ''}}" onclick="select(index)">
+            <div class="list-left">
+              <text class="name {{index === curIndex ? 'name-select' : ''}}">{{item.name}}</text>
+              <text class="realPrice {{index === curIndex ? 'realPrice-select' : ''}}">¥{{item.total_amount}}</text>
+              <text class="price {{index === curIndex ? 'price-select' : ''}}">¥{{item.price}}</text>
+            </div>
+            <div class="list-right">
+              <text class="desc {{index === curIndex ? 'desc-select' : ''}}">立省{{item.desc}}元</text>
+            </div>
+          </div>
+        </list-item>
+      </block>
+    </list>
+
+    <!-- 底部按钮 -->
+    <div class="bottom-item" onclick="showPaySelect">
+      <div class="bottom-item-btn">
+        <text class="bottom-item-btn-text"> {{listData[curIndex].total_amount}}元 {{userInfo.is_vip ? '立即续费': '立即开通'}}</text>
+      </div>
+    </div>
+
+    <!-- 选择支付方式弹窗 -->
+    <div class="mask-view" style="{{showPaySelectView}}" onclick="exitPaySelect">
+      <div class="pay-select-view" onclick="forbidClick">
+        <text class="pay-title">¥{{listData[curIndex].total_amount}}</text>
+        <list class="pay-list-content">
+          <block for="(index, item) in payListData">
+            <list-item type="payListItem" class="pay-list-item" onclick="selectWhickPay(index, evt)">
+              <image class="pay-list-item-image" src="{{item.image}}" />
+              <text class="pay-list-item-text">{{item.text}}</text>
+              <div style="flex: 1"></div>
+              <image class="pay-list-item-state" src="../../Common/images/select-1.png" if="{{curPayIndex === index}}" />
+              <image class="pay-list-item-state" src="../../Common/images/select-0.png" else />
+            </list-item>
+          </block>
+        </list>
+
+        <div class="pay-space"></div>
+
+        <!-- 底部按钮 -->
+        <div class="pay-bottom-item" onclick="confirmPay">
+          <div class="pay-bottom-item-btn">
+            <text class="pay-bottom-item-btn-text">确认支付</text>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 支付完成弹窗 -->
+    <div class="pay-finish-layout" style="{{showPayFinishView}}" onclick="exitPayFinish">
+      <image class="pay-finish-image" src="../../Common/images/pay_finish.png">
+      </image>
+    </div>
+
+  </div>
+</template>
+<style>
+.main {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+.title-item {
+  height: 100px;
+  width: 100%;
+  padding-left: 32px;
+  padding-right: 32px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.title-item-left-button {
+  width: 150px;
+}
+.title-item-right-button {
+  width: 150px;
+  justify-content: flex-end;
+}
+.title-item-left-image {
+  width: 50px;
+  height: 50px;
+}
+.title-item-middle-text {
+  font-size: 32px;
+  color: #000;
+}
+.title-item-right-text {
+  font-size: 28px;
+  color: #f85836;
+}
+.list-content {
+  margin-top: 16px;
+  margin-left: 32px;
+  margin-right: 32px;
+}
+.list-item {
+  flex: 1;
+  height: 192px;
+  margin-bottom: 20px;
+  flex-direction: row;
+  background-color: #f8f8f8;
+  border-radius: 10px;
+}
+.list-item-select {
+  flex: 1;
+  height: 192px;
+  margin-bottom: 20px;
+  flex-direction: row;
+  background-color: #f85836;
+  border-radius: 10px;
+}
+.list-left {
+  flex: 1;
+  padding-left: 40px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.list-right {
+  flex: 1;
+  flex-direction: row;
+  justify-content: flex-end;
+  padding-right: 40px;
+}
+.name {
+  font-size: 28px;
+  color: #585d64;
+}
+.price {
+  font-size: 28px;
+  color: #acacb9;
+  text-decoration: line-through;
+}
+.realPrice {
+  font-size: 58px;
+  color: #dba95f;
+}
+.desc {
+  font-size: 28px;
+  color: #f85836;
+}
+.name-select {
+  font-size: 28px;
+  color: #fff;
+}
+.price-select {
+  font-size: 28px;
+  color: #fff;
+  text-decoration: line-through;
+}
+.realPrice-select {
+  font-size: 58px;
+  color: #fff;
+}
+.desc-select {
+  font-size: 28px;
+  color: #fff;
+}
+.bottom-item {
+  margin-bottom: 40px;
+  height: 86px;
+  margin-left: 32px;
+  margin-right: 32px;
+}
+.bottom-item-btn {
+  height: 86px;
+  width: 100%;
+  border-radius: 43px;
+  background-color: #f85836;
+  align-items: center;
+  justify-content: center;
+}
+.bottom-item-btn-text {
+  font-size: 30px;
+  color: #ffffff;
+}
+.mask-view {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+.pay-select-view {
+  width: 100%;
+  height: 506px;
+  background-color: #fff;
+  align-self: flex-end;
+  flex-direction: column;
+  align-items: center;
+}
+.pay-title {
+  height: 100px;
+  font-size: 44px;
+  color: #000;
+}
+.pay-list-content {
+  height: 240px;
+}
+.pay-list-item {
+  height: 120px;
+  width: 100%;
+  flex-direction: row;
+  align-items: center;
+}
+.pay-list-item-image {
+  margin-left: 32px;
+  width: 48px;
+  height: 48px;
+}
+.pay-list-item-text {
+  margin-left: 46px;
+  font-size: 34px;
+  color: #191d21;
+}
+.pay-list-item-state {
+  margin-right: 20px;
+  width: 48px;
+  height: 48px;
+}
+.pay-space {
+  flex: 1;
+}
+.pay-bottom-item {
+  margin-top: 40px;
+  margin-bottom: 40px;
+  height: 86px;
+  margin-left: 32px;
+  margin-right: 32px;
+}
+.pay-bottom-item-btn {
+  height: 86px;
+  width: 100%;
+  border-radius: 43px;
+  background-color: #f85836;
+  align-items: center;
+  justify-content: center;
+}
+.pay-bottom-item-btn-text {
+  font-size: 30px;
+  color: #ffffff;
+}
+.pay-finish-layout {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.3);
+  justify-content: center;
+  align-items: center;
+}
+.pay-finish-image {
+  width: 550px;
+  height: 670px;
+}
+</style>
+<script>
+import alipay from '@service.alipay'
+import wxpay from '@service.wxpay'
+import router from '@system.router'
+import storage from '@system.storage'
+import { getOrderSign, verifyOrderSign, getWxOrderSign, verifyWxOrderSign, getWxH5OrderSign ,getVIPPriceApi } from '../../Common/api/api.js'
+
+export default {
+  data: {
+    token: '',
+    userInfo: {},
+    listData: [
+      {
+        vip_type: 4,
+        name: '年卡',
+        price: '215.99',
+        total_amount: '94.99',
+        desc: '121.00'
+      },
+      {
+        vip_type: 3,
+        name: '季卡',
+        price: '75.99',
+        total_amount: '24.99',
+        desc: '51.00'
+      },
+      {
+        vip_type: 2,
+        name: '月卡',
+        price: '29.99',
+        total_amount: '9.99',
+        desc: '20.00'
+      },
+    ],
+    payListData: [
+      {
+        text: '支付宝充值',
+        image: '../../Common/images/alipay.png'
+
+      },
+      {
+        text: '微信充值',
+        image: '../../Common/images/wxpay.png'
+      }
+    ],
+    curIndex: 0,
+    curPayIndex: 0,
+    showPaySelectView: 'display: none',
+    showPayFinishView: 'display: none',
+    isWxH5PayFinished: false,
+  },
+  onInit() {
+    this.token = this.$app.$def.token
+    this.userInfo = this.$app.$def.userInfo
+    //获取vip当前价格
+    this.getVipPriceData()
+  },
+
+  //获取vip当前价格
+  getVipPriceData(){
+    let postData = {
+      'token' : this.token
+    }
+    getVIPPriceApi(postData)
+      .then((ret) => {
+        this.listData = ret.data
+        console.log('gg getVIPPriceApi data=',  ret)
+      })
+      .catch((error) => {
+        //接口失败的时候用本地价格
+        console.log('error=', error)
+      })
+  },
+
+  onHide() {
+    console.log('gg onHide() isWxH5PayFinished=', this.isWxH5PayFinished)
+    if (this.isWxH5PayFinished) {
+      let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+      updateUserInfoChannel.postMessage('autoLogin')
+    }
+  },
+  select(index) {
+    this.curIndex = index
+  },
+  showPaySelect() {
+    this.showPaySelectView = 'display: flex'
+  },
+  selectWhickPay(index, evt) {
+    this.curPayIndex = index
+    // 阻止事件冒泡
+    evt.stopPropagation()
+  },
+  forbidClick() {
+
+  },
+  confirmPay(evt) {
+    if (this.curPayIndex === 0) {//支付宝支付
+      this.doAliPay()
+    } else if (this.curPayIndex === 1) {//微信支付
+      this.doWxPay()
+    }
+    // 阻止事件冒泡
+    evt.stopPropagation()
+  },
+  doWxPay() {
+    var payType = wxpay.getType()
+    console.log('doWxPay-->payType=', payType)
+    var totalAmount = parseFloat(this.listData[this.curIndex].total_amount) * 100 // 单位是分
+    console.log('doWxPay-->totalAmount=', totalAmount)
+    //获取预支付订单
+    let postData = {
+      'token': this.token,
+      'vip_type': this.listData[this.curIndex].vip_type,
+      'subject': this.listData[this.curIndex].name,
+      'total_amount': totalAmount
+    }
+    const self = this
+    if (payType === 'APP') {
+      getWxOrderSign(postData)
+        .then((ret) => {
+          console.log('微信vip订单获取远程签名数据--ret --', ret)
+          console.log('微信vip订单获取远程签名数据--out_trade_no --', ret.out_trade_no)
+          if (ret.result_code === 'SUCCESS') {
+            wxpay.pay({
+              //微信 app支付的prepayId
+              prepayid: ret.prepay_id,
+              extra: {
+                app_id: ret.appid,
+                partner_id: ret.mch_id,
+                package_value: ret.package,
+                nonce_str: ret.nonce_str,
+                time_stamp: ret.timestamp,
+                order_sign: ret.sign
+              },
+              fail: function (data, code) {
+                console.log(`WX PAY failed, code = ${code},data=${data}`)
+              },
+              cancel: function () {
+                console.log('WX PAY cancelled by user')
+              },
+              success: function (data) {
+                console.log('WX PAY success data=', data)
+                self.doWxVerifyOrderSign(ret.out_trade_no)
+
+              }
+            })
+          }
+
+        })
+        .catch((error) => {
+          console.log('微信vip订单获取远程签名数据--error=', error)
+        })
+    } else if (payType === 'MWEB') {
+      getWxH5OrderSign(postData)
+        .then((ret) => {
+          console.log('微信vip订单获取远程签名数据--ret --', ret)
+          console.log('微信vip订单获取远程签名数据--out_trade_no --', ret.out_trade_no)
+          if (ret.result_code === 'SUCCESS') {
+            wxpay.pay({
+              //微信网页支付的prepayId
+              prepayid: ret.prepay_id,
+              referer: 'http://www.vanzoo.cn',
+              extra: {
+                //传递给支付页面的自定义参数, 根据需要进行设置, 会被urlEncode之后拼接在配置的url尾部
+                mweb_url: ret.mweb_url,
+              },
+              fail: function (data, code) {
+                console.log(`WX H5 PAY handling fail, code = ${code}`)
+              },
+              cancel: function () {
+                console.log('WX H5 PAY handling cancel')
+              },
+              success: function (data) {
+                //H5方式下，支付成功的回调仅仅只是指将订单递交给微信，并不意味着支付已经成功完成
+                console.log('WX H5 PAY handling success data=', data)
+                self.isWxH5PayFinished = true
+                self.exitPaySelect()
+              }
+            })
+          }
+
+        })
+        .catch((error) => {
+          console.log('微信vip订单获取远程签名数据--error=', error)
+        })
+    } else {
+      console.log('WX PAY is not avaliable')
+    }
+  },
+  doWxVerifyOrderSign(outTradeNo) {
+    console.log('doWxVerifyOrderSign outTradeNo=', outTradeNo)
+    let postData = {
+      'token': this.token,
+      'out_trade_no': outTradeNo,
+    }
+    const self = this
+    verifyWxOrderSign(postData)
+      .then((ret) => {
+        console.log('verifyWxOrderSign--ret --', ret)
+        if (ret.status === 1) {
+          self.exitPaySelect()
+          self.showPayFinishView = 'display: flex'
+          let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+          updateUserInfoChannel.postMessage('autoLogin')
+        }
+      })
+      .catch((error) => {
+        console.log('verifyWxOrderSign--error=', error)
+        self.exitPaySelect()
+        self.back()
+      })
+  },
+  doAliPay() {
+    let postData = {
+      'token': this.token,
+      'vip_type': this.listData[this.curIndex].vip_type,
+      'subject': this.listData[this.curIndex].name,
+      'total_amount': this.listData[this.curIndex].total_amount
+    }
+    const self = this
+    getOrderSign(postData)
+      .then((ret) => {
+        alipay.pay({
+          orderInfo: ret,
+          callback: function (ret) {
+            if (ret.resultStatus === '9000') {
+              const encodeStr = encodeURIComponent(ret.result)
+              console.log('支付完成后回调 加密后数据 callback encodeStr=', encodeStr)
+              self.doVerifyOrderSign(encodeStr)
+            } else {
+              self.exitPaySelect()
+            }
+
+          }
+        })
+
+      })
+      .catch((error) => {
+        console.log('vip订单获取远程签名数据--error=', error)
+      })
+  },
+  doVerifyOrderSign(response_str) {
+    let postData = {
+      'token': this.token,
+      'vip_type': this.listData[this.curIndex].vip_type,
+      'response_str': response_str
+    }
+    const self = this
+    verifyOrderSign(postData)
+      .then((ret) => {
+        console.log('verifyOrderSign--ret --', ret)
+        if (ret.status === 1) {
+          self.exitPaySelect()
+          self.showPayFinishView = 'display: flex'
+          let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+          updateUserInfoChannel.postMessage('autoLogin')
+        }
+      })
+      .catch((error) => {
+        console.log('verifyOrderSign--error=', error)
+        self.exitPaySelect()
+        self.back()
+      })
+  },
+  exitPaySelect() {
+    this.showPaySelectView = 'display: none'
+  },
+  exitPayFinish() {
+    console.log('gg exitPayFinish')
+    this.showPayFinishView = 'display: none'
+    this.back()
+  },
+  back() {
+    router.back()
+  },
+  toBuyRecord() {
+    router.push({
+      uri: 'MemberCenter/BuyRecord'
+    })
+  }
+
+}
+</script>
+

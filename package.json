@@ -1,0 +1,34 @@
+{
+  "name": "vanzooQuick",
+  "version": "1.0.0",
+  "subversion": {
+    "toolkit": "0.4.7"
+  },
+  "description": "",
+  "scripts": {
+    "build": "hap build",
+    "release": "hap release",
+    "server": "hap server",
+    "watch": "hap watch"
+  },
+  "devDependencies": {
+    "@types/quickapp": "git+https://github.com/vivoquickapp/quickapp-types.git",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.16.0",
+    "eslint-plugin-hybrid": "0.0.5",
+    "hap-toolkit": "^0.4.7",
+    "less": "^3.9.0",
+    "less-loader": "^5.0.0"
+  },
+  "dependencies": {
+    "crypto-js": "^3.1.9-1",
+    "flyio": "^0.6.14",
+    "js-base64": "^2.5.1",
+    "js-md5": "^0.7.3",
+    "moment": "^2.24.0",
+    "ramda": "^0.26.1"
+  },
+  "browserslist": [
+    "chrome 65"
+  ]
+}

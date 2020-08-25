@@ -1,0 +1,33 @@
+<template>
+  <div class="tip-div">
+    <image class="tip-div-image" src="./images/emptypage-tip.png"></image>
+    <text class="tip-div-txt">正在努力加载中...</text>
+  </div>
+</template>
+<style>
+  .tip-div{
+    /* position: fixed; */
+    flex-direction: column;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+  }
+  .tip-div-image{
+    width: 201px;
+    height: 201px;
+  }
+  .tip-div-txt{
+    font-size: 26px;
+    color: #acacb9;
+  }
+</style>
+
+<script>
+export default {
+
+}
+</script>
+
+

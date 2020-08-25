@@ -1,0 +1,354 @@
+<template>
+  <div class="main">
+    <!-- 标题 -->
+    <div class="title-item">
+      <div class="title-item-left-button">
+        <image class="title-item-left-image" src="../Common/images/arrow-left-0.png" onclick="back"></image>
+      </div>
+      <text class="title-item-middle-text">会员中心</text>
+      <div class="title-item-right-button">
+        <text class="title-item-right-text" show="{{hadLogin}}" onclick="toBuyRecord">购买记录</text>
+      </div>
+    </div>
+
+    <!-- vip信息-->
+    <stack class="vip-center-info">
+      <image class="vip-bg-image" src="{{userInfo.is_vip === 1 ? '../Common/images/mine_vip_bg_1.png' : '../Common/images/mine_vip_bg_0.png'}}"></image>
+      <div class="vip-center-info-wrap">
+        <div class="vip-center-info-item">
+          <image class="vip-center-info-item-image" src="{{ userInfo.pic === '' ? '../Common/images/avatar_placeholder.png' : userInfo.pic }}" if="hadLogin" />
+          <image class="vip-center-info-item-image" src="../Common/images/avatar_placeholder.png" else />
+          <div class="vip-center-info-item-right">
+            <text class="vip-center-info-item-text1" if="hadLogin">{{userInfo.nickname && decodeURIComponent(userInfo.nickname)}}</text>
+            <text class="vip-center-info-item-text1" else>未登录</text>
+          </div>
+        </div>
+
+        <div class="vip-bottom-layout">
+          <text class="vip-endtime-text" if="hadLogin && userInfo.is_vip === 1">{{formatTime(userInfo.vip_expire)+' 到期' }}</text>
+          <text class="vip-endtime-text" else>未开通VIP会员</text>
+          <div class="vip-btn-disable {{userInfo.is_vip && userInfo.is_vip === 1 ? 'vip-btn-enable' : ''}}" onclick="toOpenMember">
+            <text class="vip-btn-text-disable {{userInfo.is_vip && userInfo.is_vip === 1 ? 'vip-btn-text-enable': ''}}">{{userInfo.is_vip && userInfo.is_vip === 1 ? '续费会员' : '开通会员'}}</text>
+          </div>
+        </div>
+      </div>
+
+    </stack>
+
+    <!-- vip特权-->
+    <text class="vip-privilege-tip">会员享受以下特权</text>
+    <list class="vip-privilege-list-content" style="columns:4">
+      <list-item type="listItem" for="{{privilegeListData}}">
+        <div class="vip-privilege-item">
+          <image class="vip-privilege-item-image" src="{{$item.image}}" />
+          <text class="vip-privilege-item-text">{{$item.text}}</text>
+        </div>
+      </list-item>
+    </list>
+
+    <div class="seperate"></div>
+
+    <!-- tip -->
+    <list>
+      <block for="(index, item) in tipListData">
+        <list-item type="tipListItem" class="tip-list-item" onclick="toTipDetail(item.url, item.name)">
+          <text class="tip-list-item-text">{{item.name}}</text>
+          <image class="tip-list-item-image" src="../Common/images/image_arrow_right.png"></image>
+        </list-item>
+      </block>
+    </list>
+
+    <div class="bottom-item" onclick="toOpenMember">
+      <div class="bottom-item-btn">
+        <text class="bottom-item-btn-text">{{userInfo.is_vip && userInfo.is_vip === 1 ? '续费会员':'开通会员 (最低仅¥0.99)'}}</text>
+      </div>
+    </div>
+  </div>
+  </div>
+</template>
+<style>
+.main {
+  flex-direction: column;
+}
+.title-item {
+  height: 100px;
+  width: 100%;
+  padding-left: 32px;
+  padding-right: 32px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.title-item-left-button {
+  width: 150px;
+}
+.title-item-right-button {
+  width: 150px;
+  justify-content: flex-end;
+}
+.title-item-left-image {
+  width: 50px;
+  height: 50px;
+}
+.title-item-middle-text {
+  font-size: 32px;
+  color: #000;
+}
+.title-item-right-text {
+  font-size: 28px;
+  color: #f85836;
+}
+.vip-center-info {
+  height: 300px;
+  margin-top: 32px;
+  margin-bottom: 32px;
+  margin-left: 32px;
+  margin-right: 32px;
+  border-radius: 8px;
+}
+.vip-center-info-wrap {
+  flex-direction: column;
+  border-radius: 8px;
+  width: 100%;
+  height: 100%;
+}
+.vip-bg-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+.vip-center-info-bg-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+.vip-center-info-item {
+  margin-top: 40px;
+  margin-left: 50px;
+}
+.vip-center-info-item-right {
+  margin-left: 16px;
+  height: 92px;
+  flex-direction: column;
+  justify-content: center;
+}
+.vip-center-info-item-image {
+  width: 92px;
+  height: 92px;
+  border-radius: 46px;
+}
+.vip-center-info-item-text1 {
+  font-size: 30px;
+  color: #585d64;
+}
+.vip-center-info-item-text2-disable {
+  font-size: 24px;
+  color: #9c9c9c;
+}
+
+.vip-center-info-item-text2-enable {
+  font-size: 24px;
+  color: #a88230;
+}
+.vip-privilege-tip {
+  margin-top: 32px;
+  margin-bottom: 32px;
+  margin-left: 32px;
+  font-size: 26px;
+  color: #585d64;
+}
+.vip-privilege-list-content {
+  height: 210px;
+}
+.vip-privilege-item {
+  flex: 1;
+  align-items: center;
+  flex-direction: column;
+}
+.vip-privilege-item-image {
+  width: 120px;
+  height: 120px;
+}
+.vip-privilege-item-text {
+  margin-top: 20px;
+  margin-bottom: 28px;
+  text-align: center;
+}
+.seperate {
+  height: 16px;
+  background-color: #f1f1f6;
+}
+.tip-list-item {
+  height: 112px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.tip-list-item-text {
+  margin-left: 32px;
+  font-size: 30px;
+  color: #585d64;
+}
+.tip-list-item-image {
+  margin-right: 32px;
+  width: 28px;
+  height: 34px;
+}
+.bottom-item {
+  height: 86px;
+  margin-left: 32px;
+  margin-right: 32px;
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+.bottom-item-btn {
+  height: 86px;
+  width: 100%;
+  border-radius: 43px;
+  background-color: #f85836;
+  align-items: center;
+  justify-content: center;
+}
+.bottom-item-btn-text {
+  text-align: center;
+  font-size: 32px;
+  color: #ffffff;
+}
+.vip-bottom-layout {
+  flex: 1;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 50px;
+  padding-right: 32px;
+}
+.vip-endtime-text {
+  font-size: 28px;
+  color: #81785e;
+}
+.vip-btn-disable {
+  border-width: 1px;
+  border-color: #585d64;
+  width: 150px;
+  height: 48px;
+  border-radius: 24px;
+  align-items: center;
+  justify-content: center;
+}
+.vip-btn-enable {
+  border-width: 1px;
+  border-color: #f85836;
+  width: 150px;
+  height: 48px;
+  border-radius: 24px;
+  align-items: center;
+  justify-content: center;
+}
+.vip-btn-text-disable {
+  font-size: 26px;
+  color: #585d64;
+}
+.vip-btn-text-enable {
+  font-size: 26px;
+  color: #f85836;
+}
+</style>
+<script>
+import router from '@system.router'
+import storage from '@system.storage'
+import moment from 'moment'
+const updateUserInfoChannel = new BroadcastChannel('updateUserInfoSuccess')
+
+export default {
+
+  data: {
+    hadLogin: false,
+    userInfo: {},
+    privilegeListData: [
+      {
+        image: '../Common/images/vip_privilege_1.png',
+        text: '免广告'
+      },
+      {
+        image: '../Common/images/vip_privilege_4.png',
+        text: '尊贵标识'
+      },
+      {
+        image: '../Common/images/vip_privilege_5.png',
+        text: 'VIP书籍'
+      },
+      {
+        image: '../Common/images/vip_privilege_more.png',
+        text: '敬请期待'
+      },
+    ],
+    tipListData: [
+      {
+        'name': '会员服务协议',
+        'url': 'http://h5read.mjpet.net/html/service_k.html'
+      },
+      {
+        'name': '隐私政策',
+        url: 'http://h5read.mjpet.net/html/privacy_k.html'
+      }
+    ]
+  },
+  onInit() {
+    const self = this
+    updateUserInfoChannel.onmessage = function (e) {
+      if (e.data == 'updateUserInfoSuccess') {
+        self.refreshUI()
+      }
+    }
+  },
+  onDestroy() {
+    updateUserInfoChannel.close()
+  },
+  onShow() {
+    this.refreshUI()
+  },
+  refreshUI() {
+    this.hadLogin = this.$app.$def.hadLogin
+    this.userInfo = this.$app.$def.userInfo
+    console.log('gg userInfo=', JSON.stringify(this.userInfo))
+  },
+  formatTime(timestamp) {
+    return moment(timestamp * 1000).format('YYYY-MM-DD')
+  },
+  toOpenMember() {
+    if (this.hadLogin) {
+      router.push({
+        uri: 'MemberCenter/OpenMember'
+      })
+    } else {
+      router.push({
+        uri: '/Login'
+      })
+    }
+  },
+  back() {
+    router.back()
+  },
+  toBuyRecord() {
+    router.push({
+      uri: 'MemberCenter/BuyRecord',
+      params: {
+        isFrom: 'MemberCenter'
+      }
+    })
+  },
+  toTipDetail(url, titleName) {
+    router.push({
+      uri: 'WebView',
+      params: {
+        url: url,
+        titleName: titleName
+      }
+    })
+  }
+
+}
+
+
+</script>
+

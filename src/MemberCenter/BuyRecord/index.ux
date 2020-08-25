@@ -1,0 +1,252 @@
+<template>
+  <div class="main">
+    <!-- 标题 -->
+    <div class="title-item">
+      <div class="title-item-left-button">
+        <image class="title-item-left-image" src="../../Common/images/arrow-left-0.png" onclick="back"></image>
+      </div>
+      <text class="title-item-middle-text">购买记录</text>
+      <div class="title-item-right-button">
+      </div>
+    </div>
+
+    <!-- empty-->
+    <div class="empty" show="{{hasLoadData === true && listData.length === 0}}">
+      <image class="empty-image" src="../../Common/images/buy_record_empty.png"></image>
+      <text class="empty-text">您还没有购买记录哦快去购买吧</text>
+      <div class="empty-button" onclick="toOpenMember">
+        <text class="empty-button-text">去购买</text>
+      </div>
+    </div>
+
+    <!-- list -->
+    <list onscrollbottom="scrollBottom">
+      <block for="(index, value) in listData">
+        <list-item type="listItem" class="list-item">
+          <div class="list-item-layout1">
+            <text class="list-item-layout1-left-text" if="value.vip_type === 1">3天体验会员</text>
+            <text class="list-item-layout1-left-text" else if="value.vip_type === 2">月卡</text>
+            <text class="list-item-layout1-left-text" else if="value.vip_type === 3">季卡</text>
+            <text class="list-item-layout1-left-text" else if="value.vip_type === 4">年卡</text>
+            <text class="list-item-layout1-right-text">¥{{value.gold}}</text>
+          </div>
+          <div class="list-item-layout2">
+            <text class="list-item-layout2-left-text">会员生效时间:</text>
+            <text class="list-item-layout2-right-text">{{formatTime(value.begin_ts)}}</text>
+          </div>
+          <div class="list-item-layout2">
+            <text class="list-item-layout2-left-text">会员到期时间:</text>
+            <text class="list-item-layout2-right-text">{{formatTime(value.end_ts)}}</text>
+          </div>
+          <div class="list-item-layout2">
+            <text class="list-item-layout2-left-text">购买时间:</text>
+            <text class="list-item-layout2-right-text">{{formatTime(value.pay_ts)}}</text>
+          </div>
+          <div class="list-item-layout2">
+            <text class="list-item-layout2-left-text">订单号:</text>
+            <text class="list-item-layout2-right-text">{{value.order_id}}</text>
+          </div>
+        </list-item>
+
+        <list-item type="seperate-line" class="seperate-line" show="{{index != listData.length -1}}">
+        </list-item>
+      </block>
+
+      <!-- 加载更多 -->
+      <list-item type="loadMore" class="load-more" if="{{!isLoadingData}}">
+        <progress type="circular" show="{{ hasMore}}"></progress>
+        <text show="{{ hasMore}}">加载更多...</text>
+      </list-item>
+    </list>
+
+  </div>
+</template>
+<style>
+.main {
+  flex: 1;
+  flex-direction: column;
+  background-color: #fff;
+}
+.title-item {
+  background-color: #fff;
+  height: 100px;
+  width: 100%;
+  padding-left: 32px;
+  padding-right: 32px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+.title-item-left-button {
+  width: 150px;
+}
+.title-item-right-button {
+  width: 150px;
+  justify-content: flex-end;
+}
+.title-item-left-image {
+  width: 50px;
+  height: 50px;
+}
+.title-item-middle-text {
+  font-size: 32px;
+  color: #000;
+}
+.title-item-right-text {
+  font-size: 28px;
+  color: #2a90ef;
+}
+.empty {
+  margin-top: 240px;
+  width: 260px;
+  height: 360px;
+  align-self: center;
+  flex-direction: column;
+  align-items: center;
+}
+.empty-image {
+  width: 184px;
+  height: 140px;
+}
+.empty-text {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 28px;
+  color: #acacb9;
+  line-height: 38px;
+}
+.empty-button {
+  margin-top: 40px;
+  width: 154px;
+  height: 48px;
+  border-radius: 24px;
+  background-color: #f85836;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.empty-button-text {
+  font-size: 26px;
+  color: #fff;
+}
+.seperate-line {
+  margin-left: 52px;
+  margin-right: 52px;
+  height: 1px;
+  width: 100%;
+  background-color: #f1f1f6;
+}
+.list-item {
+  margin-left: 32px;
+  margin-right: 32px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  background-color: #fff;
+  border-radius: 10px;
+  flex-direction: column;
+}
+.list-item-layout1 {
+  margin-left: 20px;
+  margin-right: 20px;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.list-item-layout1-left-text {
+  font-size: 34px;
+  color: #191d21;
+}
+.list-item-layout1-right-text {
+  font-size: 34px;
+  color: #191d21;
+}
+.list-item-layout2 {
+  margin-top: 24px;
+  margin-left: 20px;
+  margin-right: 20px;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.list-item-layout2-left-text {
+  font-size: 28px;
+  color: #585d64;
+}
+.list-item-layout2-right-text {
+  font-size: 28px;
+  color: #585d64;
+}
+.load-more {
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+</style>
+<script>
+import router from '@system.router'
+import storage from '@system.storage'
+import moment from 'moment'
+import { getVipBuyRecord } from '../../Common/api/api.js'
+
+export default {
+  private: {
+    token: '',
+    listData: [],
+    hasMore: false,
+    start: 0,
+    size: 10,
+    isLoadingData: false,
+    hasLoadData: false,
+  },
+  protected: {
+    isFrom: 'OpenMember'
+  },
+  onInit() {
+    this.token = this.$app.$def.token
+    if (this.token != '') {
+      this.getVipBuyRecord(0, 10, this.token)
+    }
+
+
+  },
+  formatTime(timestamp) {
+    return moment(timestamp * 1000).format('YYYY-MM-DD HH:mm:ss')
+  },
+  getVipBuyRecord(start, size, token) {
+    this.isLoadingData = true
+    let postData = {
+      'token': token,
+    }
+    getVipBuyRecord(start, size, postData)
+      .then((ret) => {
+        this.isLoadingData = false
+        this.hasMore = ret.hasMore
+        this.listData = this.listData.concat(ret.list)
+        this.hasLoadData = true
+      })
+      .catch((error) => {
+        console.log('vip购买记录数据--error=', error)
+        this.isLoadingData = false
+        this.hasLoadData = true
+      })
+  },
+  scrollBottom() {
+    //加载下一页
+    if (!this.isLoadingData && this.hasMore) {
+      this.start = this.start + this.size
+      this.getVipBuyRecord(this.start, this.size, this.token)
+    }
+  },
+  back() {
+    router.back()
+  },
+  toOpenMember() {
+    if (this.isFrom === 'MemberCenter') {
+      router.replace({
+        uri: 'MemberCenter/OpenMember'
+      })
+    } else {
+      router.back()
+    }
+
+  }
+}
+</script>

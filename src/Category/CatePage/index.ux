@@ -1,0 +1,176 @@
+<import name="emptyTip" src="../../Common/noNetworkTipView.ux"></import>
+<template>
+  <div class="category-page">
+    <refresh class="refresh" onrefresh="refresh" refreshing="{{isRefreshing}}" type="{{refreshType}}">
+
+      <div class="category-page-div">
+        <list class="category-list" style="columns:{{columns}}" if="{{!showEmptyTip}}">
+          <list-item type="listItem" class="list-item" for="{{catelist}}" onclick="toCategaryList($item.id,$item.name,$item.cid,$item.sort,$item.tags)">
+            <image class="image-item" src="{{$item.image}}"></image>
+            <text class="txt">{{ $item.name }}</text>
+          </list-item>
+        </list>
+        <emptyTip if="{{showEmptyTip}}"></emptyTip>
+      </div>
+    </refresh>
+
+  </div>
+</template>
+
+<script>
+
+import { bookCategoryApi, adControlApi } from '../../Common/api/api.js'
+import router from '@system.router'
+import prompt from '@system.prompt'
+
+//金立广告 其他手机不可用
+// import gioneeAd from '@service.ad'
+
+export default {
+  props: ['sex'],
+  data: {
+    columns: 2,
+    isRefreshing: false,
+    refreshType: 'auto',
+    catelist: [],
+    showEmptyTip: true,
+
+    // insertAd: null,//金立广告
+  },
+
+  onInit() {
+    this.getBookCategoryData()
+
+    // //gionne ad 插屏
+    // if (Number(this.sex) === 2) { //不做类别判断会出现多重广告
+    //   this.getAdControlInfo()
+    // }
+
+  },
+
+  // //  广告配置
+  // getAdControlInfo() {
+  //   //分类广告配置传15
+  //   adControlApi(15)
+  //     .then((ret) => {
+  //       console.log('categary adType ***********', ret)
+  //       //调试模拟数据
+  //       // let retM = { list: [{ type: 6, ad_id: '561', ad_type: 8 }] }
+  //       if (ret.list.length > 0 && Number(ret.list[0].type) === 6) {
+  //         //插屏只有 金立6
+  //         //gionne ad 插屏
+  //         let gioneeInsertAdId = ret.list[0].ad_id
+  //         let provider = gioneeAd.getProvider()
+  //         if (provider === 'gionee') {
+  //           this.createInsertAd(gioneeInsertAdId)
+  //         }
+  //       } else {
+  //         //暂只支持金立插屏
+  //         return
+  //       }
+
+  //     })
+  //     .catch((error) => {
+  //       console.log('error=', error)
+  //     })
+  // },
+
+  // createInsertAd(gioneeInsertAdId) {
+  //   this.insertAd = gioneeAd.createInsertAd({
+  //     adUnitId: gioneeInsertAdId //'561'  //此id将作为后台可配置
+  //   })
+  //   this.insertAd.onError((s) => {
+  //     $umeng_stat.trackEvent('gionee-ad_insert_classify_request_fail',{user_imei: this.$app.$def.IMEI})
+  //     console.warn('onError ' + JSON.stringify(s))
+
+  //   })
+  //   this.insertAd.onLoad((s) => {
+  //     $umeng_stat.trackEvent('gionee-ad_insert_classify_request_success',{user_imei: this.$app.$def.IMEI})
+  //     console.warn('onLoad ' + JSON.stringify(s))
+
+  //   })
+  //   this.insertAd.onClose((s) => {
+  //     this.destoryAd()
+  //     console.warn('onClose ' + JSON.stringify(s))
+
+  //   })
+
+  //   this.showAd()
+  // },
+
+  // showAd() {
+  //   this.insertAd.show(function (s) {
+  //     if (s === 'success') {
+  //       $umeng_stat.trackEvent('gionee-ad_insert_classify_show',{user_imei: this.$app.$def.IMEI})//show success 埋点
+  //     }
+  //   })
+  // },
+
+  // destoryAd() {
+  //   this.insertAd.destroy()
+  //   this.insertAd = null
+  // },
+
+  // ad end
+
+  onDestroy() {
+    // let provider = gioneeAd.getProvider()
+    // if (this.insertAd != null && provider === 'gionee') {
+    //   this.destoryAd() //移除金立广告
+    // }
+  },
+
+
+  getBookCategoryData() {
+    bookCategoryApi('')
+      .then((ret) => {
+        this.isRefreshing = false
+
+        if (ret == null || ret.length == 0) {
+          this.showEmptyTip = true
+        } else {
+
+          this.showEmptyTip = false
+          if (Number(this.sex) === 1) {
+            this.catelist = ret[0].list
+          }
+          if (Number(this.sex) === 2) {
+            this.catelist = ret[1].list
+          }
+          if (Number(this.sex) === 3) {
+            this.catelist = ret[2].list
+          }
+        }
+      })
+      .catch((error) => {
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  toCategaryList(id, name, cid, sort, tags) {
+    $umeng_stat.trackEvent('category_item_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    router.push({
+      uri: 'Category/CategoryListPage',
+      params: {
+        category_id: id,
+        sex: 1,
+        title: name,
+        placeholder: '战神'
+      }
+    })
+  },
+
+  refresh(e) {
+    // 更新刷新状态（属性refreshing的值从false改为true会触发refresh组件的状态更新，反之亦然）
+    this.isRefreshing = e.refreshing
+    this.getBookCategoryData()
+
+  },
+}
+</script>
+
+<style>
+@import "../index.css";
+</style>

@@ -1,0 +1,358 @@
+<import name="emptyTip" src="../Common/noNetworkTipView.ux"></import>
+<template>
+  <div class="shortEssay-page">
+
+    <div class="title-wrap">
+
+      <text class="title-text">{{titleName}}</text>
+
+      <div class="search-wrap" onclick="toSearch">
+        <image class="icon-search" src="{{searchImage}}"></image>
+        <text class="input-wrap"></text>
+      </div>
+    </div>
+
+    <refresh offset="132px" class="refresh" onrefresh="refresh" refreshing="{{isRefreshing}}" type="{{refreshType}}">
+
+      <list class="shortEssay-list" style="columns:{{columns}}" onscrollbottom="scrollbottomContent" if="{{!showEmptyTip}}">
+
+        <list-item type="listItem" class="list-item" for="{{shortEssaylist}}" onclick="toDetail($item)">
+          <text class="list-item-title">{{$item.desc}}</text>
+          <image class="image-item" src="{{$item.images}}"></image>
+
+          <div class="list-bottom-text">
+            <text class="list-bottom-text-txt">{{$item.populary}}读过</text>
+            <text class="list-bottom-text-txt">{{$item.time_long}}</text>
+          </div>
+        </list-item>
+
+        <list-item type="loadMore" class="content-load-more">
+          <progress type="circular" show="{{ hasMoreData }}"></progress>
+          <text show="{{ hasMoreData }}">加载中....</text>
+          <text show="{{ !hasMoreData }}">没有更多了~</text>
+        </list-item>
+
+      </list>
+      <emptyTip if="{{showEmptyTip}}"></emptyTip>
+    </refresh>
+
+  </div>
+</template>
+
+<style>
+.demo-page {
+  flex-direction: column;
+  align-items: center;
+}
+.btn {
+  width: 550px;
+  height: 60px;
+  margin-top: 10px;
+  border-radius: 43px;
+  background-color: #09ba07;
+  font-size: 30px;
+  color: #ffffff;
+}
+
+.shortEssay-page {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.title-wrap {
+  height: 100px;
+  padding-left: 32px;
+  align-items: center;
+  border-bottom-color: #eeeeee;
+  border-bottom-width: 1px;
+}
+.title-text {
+  font-size: 40px;
+  color: #1e252f;
+}
+
+.search-wrap {
+  flex: 1;
+  margin-left: 36px;
+  margin-right: 60px;
+  height: 60px;
+  background-color: #f1f1f6;
+  border-radius: 30px;
+  align-items: center;
+}
+.icon-search {
+  width: 28px;
+  height: 28px;
+  margin-left: 32px;
+}
+.input-wrap {
+  margin-left: 20px;
+  margin-right: 32px;
+  flex: 1;
+}
+
+.info {
+  margin-left: 10px;
+  margin-right: 10px;
+  width: 60px;
+  height: 60px;
+  align-items: center;
+  justify-content: center;
+}
+.icon-info {
+  width: 31px;
+  height: 31px;
+}
+
+.list-item {
+  flex-direction: column;
+  margin-left: 30px;
+  margin-right: 30px;
+  border-bottom-color: #eeeeee;
+  border-bottom-width: 1px;
+}
+
+.list-item-title {
+  margin-top: 20px;
+  lines: 2;
+  font-size: 35px;
+  text-overflow: ellipsis;
+  color: #545c67;
+}
+.image-item {
+  width: 100%;
+  height: 350px;
+  margin-top: 10px;
+}
+
+.list-bottom-text {
+  flex-direction: row;
+  margin-bottom: 15px;
+  margin-top: 15px;
+}
+
+.list-bottom-text-txt {
+  font-size: 20px;
+  color: #939aa2;
+  margin-right: 20px;
+}
+
+.content-load-more {
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+  margin-bottom: 15px;
+}
+
+.refresh {
+  flex-direction: column;
+}
+</style>
+
+<script>
+import { shortEssayApi, adControlApi } from '../Common/api/api.js'
+import router from '@system.router'
+import fetch from '@system.fetch'
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+
+//金立广告 其他手机不可用
+// import gioneeAd from '@service.ad'
+
+export default {
+  data: {
+    titleName: '爽文',
+    searchImage: '../Common/images/search.png',
+    infoImage: '../Common/images/market_info.png',
+    hasMoreData: true,
+    columns: 1,
+    Size: 5,
+    Start: 0,
+    isRefreshing: false,
+    refreshType: 'pulldown',
+    shortEssaylist: [],
+    showEmptyTip: true,
+    bannerAd: null,
+
+    // insertAd: null,//金立广告
+  },
+
+  onInit() {
+    this.getShortEssayList()
+    // this.getAdControlInfo()
+  },
+
+  // //  广告配置
+  // getAdControlInfo() {
+  //   //爽文广告配置传16
+  //   adControlApi(16)
+  //     .then((ret) => {
+  //       console.log('shortessay adType ***********', ret)
+  //       //调试模拟数据
+  //       // let retM = { list: [{ type: 6, ad_id: '561', ad_type: 8 }] }
+  //       if (ret.list.length > 0 && Number(ret.list[0].type) === 6) {
+  //         //插屏只有 金立6
+  //         //gionne ad 插屏
+  //         let gioneeInsertAdId = ret.list[0].ad_id
+  //         let provider = gioneeAd.getProvider()
+  //         if (provider === 'gionee') {
+  //           this.createInsertAd(gioneeInsertAdId)
+  //         }
+  //       } else {
+  //         //暂只支持金立插屏
+  //         return
+  //       }
+  //     })
+  //     .catch((error) => {
+  //       console.log('error=', error)
+  //     })
+  // },
+
+  // createInsertAd(gioneeInsertAdId) {
+  //   this.insertAd = gioneeAd.createInsertAd({
+  //     adUnitId: gioneeInsertAdId //'561'  //此id将作为后台可配置
+  //   })
+  //   this.insertAd.onError((s) => {
+  //     $umeng_stat.trackEvent('gionee-ad_insert_shortessay_request_fail',{user_imei: this.$app.$def.IMEI})
+  //     console.warn('onError ' + JSON.stringify(s))
+  //   })
+  //   this.insertAd.onLoad((s) => {
+  //     $umeng_stat.trackEvent('gionee-ad_insert_shortessay_request_success',{user_imei: this.$app.$def.IMEI})
+  //     console.warn('onLoad ' + JSON.stringify(s))
+  //   })
+  //   this.insertAd.onClose((s) => {
+  //     this.destoryAd()
+  //     console.warn('onClose ' + JSON.stringify(s))
+  //   })
+
+  //   this.showAd()
+  // },
+
+  // showAd() {
+  //   this.insertAd.show(function (s) {
+  //     if (s === 'success') {
+  //       $umeng_stat.trackEvent('gionee-ad_insert_shortessay_show',{user_imei: this.$app.$def.IMEI})//show success 埋点
+  //     }
+  //   })
+  // },
+
+  // destoryAd() {
+  //   this.insertAd.destroy() //移除金立广告
+  //   this.insertAd = null
+  // },
+
+  // ad test end
+
+  onDestroy() {
+    // let provider = gioneeAd.getProvider()
+    // if (this.insertAd != null && provider === 'gionee') {
+    //   this.destoryAd() //移除金立广告
+    // }
+  },
+
+
+  getShortEssayList() {
+    shortEssayApi(this.Size, this.Start)
+      .then((ret) => {
+        if (ret == null || ret.length == 0) {
+          this.hasMoreData = false
+        } else {
+          this.showEmptyTip = false
+          this.shortEssaylist = ret
+        }
+      })
+      .catch((error) => {
+        this.hasMoreData = false
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  // 下拉刷新
+  refresh(e) {
+    // 更新刷新状态（属性refreshing的值从false改为true会触发refresh组件的状态更新，反之亦然）
+    this.isRefreshing = e.refreshing
+    this.Size = 5
+    this.Start = 0
+    shortEssayApi(this.Size, this.Start)
+      .then((ret) => {
+
+        if (ret == null || ret.length == 0) {
+          this.hasMoreData = false
+          this.isRefreshing = false
+        } else {
+          this.showEmptyTip = false
+          this.shortEssaylist = ret
+          this.isRefreshing = false
+          this.hasMoreData = true
+        }
+
+      })
+      .catch((error) => {
+        this.hasMoreData = false
+        this.isRefreshing = false
+      })
+
+  },
+
+  // 上拉加载
+  scrollbottomContent() {
+    this.Start += 5
+    shortEssayApi(this.Size, this.Start)
+      .then((ret) => {
+        if (ret == null || ret.length == 0) {
+          this.hasMoreData = false
+        } else {
+          this.showEmptyTip = false
+          this.shortEssaylist = this.shortEssaylist.concat(ret)
+        }
+      })
+      .catch((error) => {
+        this.hasMoreData = false
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  toSearch() {
+    $umeng_stat.trackEvent('market_search_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    router.push({
+      uri: 'Search'
+    })
+  },
+  showMenu() {
+    // this.$app.$def.showMenu();
+    router.push({
+      uri: 'About'
+    })
+  },
+
+  //阅读页
+  toNovelContent(item) {
+    router.push({
+      uri: '/NovelContent',
+      params: {
+        bookId: item.book_id,
+        bookName: item.name,
+        picUrl: item.cover
+      }
+    })
+  },
+
+  //push详情页
+  toDetail(item) {
+    $umeng_stat.trackEvent('shuangbook_list',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    router.push({
+      uri: 'BookDetail',
+      params: {
+        bookId: item.book_id,
+      }
+    })
+  },
+}
+</script>
+
+

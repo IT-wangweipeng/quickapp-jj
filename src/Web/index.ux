@@ -1,0 +1,184 @@
+<template>
+  <div class="doc-page">
+    <web class="web-comp" src="{{web_url}}" trustedurl="{{trustedurl}}" allowthirdpartycookies="true" onpagestart="onPageStart" onpagefinish="onPageFinish" onerror="onError" @message="messagefn" id="web"></web>
+  </div>
+</template>
+
+<style lang="less">
+.doc-page {
+  flex-direction: column;
+  background-color: #ffffff;
+
+  .web-comp {
+    flex: 1;
+  }
+
+  @keyframes rotate {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+</style>
+<script>
+import prompt from '@system.prompt'
+import router from '@system.router'
+import fetch from '@system.fetch'
+import share from '@system.share'
+import storage from '@system.storage'
+import device from '@system.device'
+
+export default {
+  private: {
+    web_url: '',
+    trustedurl: '',
+    bookDetail: {
+      bookId: '',//书籍id
+      cid: '',//章节id
+      picUrl: '',//书籍封面
+      bookName: '',//书籍名称
+      chapterName: '',//章节名称
+      time: '',//浏览记录用的时间
+      src: ''//书架删除默认圆圈
+    }
+  },
+  protected: {
+    IMEI: '',
+    bookId: '',
+    cid: '' || 1,
+    picUrl: '',
+    bookName: '',
+    placeholder: ''
+  },
+  onInit() {
+    //获取设备id即IMEI
+    this.getIMEI()
+
+    //测试地址
+    let url = this.$app.domain()
+    this.trustedurl = '/^(' + url + ')/*'
+    url = url + "/webview/html/content.html?imei=" + this.IMEI + "&bookId=" + this.bookId + "&cid=" + this.cid + "&picUrl=" + this.picUrl
+
+
+    //线上地址
+    // let url = this.$app.domainH5();
+    // this.trustedurl = '/^(' + url + ')/*';
+    // url = url + "/reader/html/content.html?imei=" + this.IMEI + "&bookId=" + this.bookId + "&cid=" + this.cid+ "&picUrl=" + this.picUrl;
+
+    //改变web容器地址
+    this.web_url = url
+  },
+  onShow() {
+    $umeng_stat.resume(this) //搜索页统计页面停留时间
+  },
+  onHide() {
+    this.showLoad = ''
+    $umeng_stat.pause(this)
+  },
+  getIMEI() {
+    //获取设备唯一标识 imei
+    storage.get({
+      key: 'IMEI',
+      success: ret => {
+        this.IMEI = ret
+      }
+    })
+  },
+  sendMsg() {
+    let param = {
+      bookId: this.bookId,
+      cid: this.cid,
+      picUrl: this.picUrl,
+      bookName: this.bookName,
+      imei: this.IMEI
+    }
+    let msg = JSON.stringify(param)
+    this.$element('web').postMessage({ message: msg })
+  },
+  messagefn(e) {
+    // prompt.showToast({
+    // 	// message: `web get message: ${e.message}, url: ${e.url}`,
+    // 	 message: `web get message: ${e.message}`,
+    // 	duration: 1
+    // });
+    this.setMemoryCache(e.message)
+    // 阅读章节数	√	read_chapters
+    $umeng_stat.trackEvent('read_chapters', { user_id: this.IMEI, book_id: this.bookId })
+  },
+  onPageStart(e) {
+    console.info('### pagestart ###' + e.url)
+  },
+  onPageFinish(e) {
+    this.sendMsg()
+  },
+  onError() {
+    console.info('### pageError ###')
+  },
+  onBackPress() {
+    this.$element('web').canBack({
+      callback: function (e) {
+        if (e) {
+          // 加载历史列表中的上一个 URL
+          this.$element('web').back()
+        } else {
+          // router.back()
+          // router.push({
+          //     uri: '/NovelDtail',
+          //     params: {
+          //         bookId: this.bookId,
+          //         picUrl: this.picUrl,
+          //         bookName: this.bookName,
+          //         cid: this.cid
+          //     }
+          // });
+        }
+      }.bind(this)
+    });
+    return true //自己处理返回逻辑
+  },
+  setMemoryCache(result) {
+    if (result != null && result != undefined && result.length > 0) {
+      let object = JSON.parse(result)
+      //获取存储localstorage的key
+      let lst_key = object.lst
+      this.bookDetail.bookId = object.bookId
+      this.bookDetail.picUrl = object.picUrl
+      this.bookDetail.bookName = object.bookName
+      this.bookDetail.cid = object.cid
+      this.bookDetail.chapterName = object.chapterName
+      this.bookDetail.time = object.time
+      this.bookDetail.src = object.src
+
+      storage.get({
+        key: lst_key,
+        success: ret => {
+
+          if (ret != null && ret != '' && ret != undefined && ret != []) {
+            ret = JSON.parse(ret)
+            let index = ret.findIndex(item => item.bookId === this.bookDetail.bookId)
+            if (index > -1) {
+              ret.splice(index, 1)
+            }
+            ret.push(this.bookDetail)
+            //ret.unshift(this.bookDetail);
+            storage.set({
+              key: lst_key,
+              value: ret
+            })
+          } else {
+            let dt = []
+            dt.push(this.bookDetail)
+            storage.set({
+              key: lst_key,
+              value: dt
+            })
+          }
+        }
+      })
+    }
+  }
+}
+</script>

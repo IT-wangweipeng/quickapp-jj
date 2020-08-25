@@ -1,0 +1,50 @@
+<template>
+  <div class="mainPage">
+    <image class="logo" src="../Common/logo.png"></image>
+    <text class="appName">{{appName}}</text>
+    <text class="versionName">{{versionName}}</text>
+    <text class="contact">{{contact}}</text>
+  </div>
+</template>
+<script>
+import app from '@system.app'
+export default {
+  private: {
+    appName: '',
+    versionName: '',
+    contact: '客服QQ:2420248161',
+  },
+  onInit() {
+    const appInfo = app.getInfo()
+    this.appName = appInfo.name
+    this.versionName = '版本V' + appInfo.versionName
+  },
+}
+</script>
+
+<style>
+.mainPage {
+  flex-direction: column;
+  background-color: #ffffff;
+  align-items: center;
+  justify-content: center;
+}
+.logo {
+  width: 200px;
+  height: 200px;
+}
+.appName {
+  font-size: 40px;
+  color: #000000;
+}
+.versionName {
+  margin-top: 20px;
+  font-size: 30px;
+  color: #a0a7b2;
+}
+.contact {
+  margin-top: 20px;
+  font-size: 30px;
+  color: #a0a7b2;
+}
+</style>

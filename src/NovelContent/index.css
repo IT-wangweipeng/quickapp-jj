@@ -1,0 +1,495 @@
+/* 自留广告 */
+.retention_banner_ad_div{
+  height: 120px;
+  position: fixed;
+  bottom: 0px;
+  flex-direction: row;
+  background-color: #fafdfa;
+}
+
+.retention_banner_ad_image{
+  padding-left: 5px;
+  padding-top: 5px;
+  height: 115px;
+  width: 150px;
+  /* background-color: #cccccc; */
+}
+
+.retention_banner_ad_title_div{
+  flex-direction: column;
+  width: 560px;
+}
+
+.retention_banner_ad_title{
+  padding-top: 15px;
+  padding-left: 15px;
+  font-size: 30px;
+  text-align: left;
+  color: #808080;
+}
+
+.retention_banner_ad_subtitle{
+  padding-top: 10px;
+  padding-left: 15px;
+  font-size: 26px;
+  text-align: left;
+  color:#9c9797;
+}
+
+
+.retention_banner_ad_remove_image{
+  margin-left: auto;
+  margin-right: 10px;
+  margin-top: 10px;
+  width: 30px;
+  height: 30px;
+}
+
+.retent-chapter-ad-div{
+
+}
+.retent-chapter-ad-img{
+  width: 100%;
+  height: 350px;
+}
+.retent-chapter-ad-aurl{
+  width: 100%;
+  height: 350px;
+}
+.retent-chapter-ad-remove-image{
+  height: 30px;
+  width: 30px;
+  position: absolute;
+  transform: translate(640px, 10px);
+}
+
+
+
+
+
+
+
+
+
+
+
+/* 阅读页 其他*/
+.doc-page {
+  flex-direction: column;
+}
+
+.title {
+  position: fixed;
+  top: 0px;
+}
+.content {
+  width: 100%;
+  height: 100%;
+  padding: 0 20px;
+  padding-bottom: 0px;
+  flex-direction: column;
+  text-indent: 10px;
+}
+.content-list-item {
+  flex-direction: column;
+  margin-left: 15px;
+  margin-right: 10px;
+}
+.content-list-item .ad-position {
+  margin-top: 30px;
+  margin-bottom: 30px;
+  width: 100%;
+  height: 340px;
+}
+.chapter-title {
+  margin-top: 30px;
+  font-size: 50px;
+  font-weight: 900;
+  text-align: center;
+}
+.content-text {
+  font-size: 40px;
+  line-height: 70px;
+}
+.txtStyle {
+  text-indent: 70px;
+}
+.content-text-vip-div {
+  flex-direction: column;
+}
+.content-text-vip {
+  height: 980px;
+  width: 100%;
+  lines: 14;
+  text-overflow: ellipsis;
+}
+.content-load-top-more {
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  margin-top: 15px;
+}
+.content-load-more {
+  justify-content: center;
+  align-items: flex-start;
+  height: 50px;
+  margin-bottom: 15px;
+}
+.content-load-more-else {
+  justify-content: center;
+  align-items: flex-start;
+  height: 150px;
+  margin-bottom: 15px;
+}
+
+.header {
+  position: fixed;
+  top: 0px;
+  height: 80px;
+  flex-direction: row;
+  background-color: #fafdfa;
+  border-bottom-width: 0.5px;
+  border-bottom-color: #eeeeee;
+  align-items: center;
+}
+.back-button {
+  height: 50px;
+  width: 50px;
+  margin-left: 20px;
+}
+.book-name-header {
+  width: 360px;
+  height: 50px;
+  text-align: left;
+  margin-left: 20px;
+  font-size: 30px;
+  color: #000000;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+.chapter-name-header {
+  width: 310px;
+  height: 50px;
+  text-align: right;
+  margin-left: 40px;
+  font-size: 23px;
+  color: #000000;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+.footer {
+  position: fixed;
+  width: 100%;
+  bottom: 120px;
+  height: 106px;
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: #fafdfa;
+}
+.footer-else {
+  position: fixed;
+  width: 100%;
+  bottom: 0px;
+  height: 106px;
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: #fafdfa;
+}
+.image-1 {
+  width: 55px;
+  height: 55px;
+  margin-top: 25px;
+  margin-left: 45px;
+}
+.image-2 {
+  width: 55px;
+  height: 55px;
+  margin-top: 25px;
+}
+.image-3 {
+  width: 55px;
+  height: 55px;
+  margin-top: 25px;
+  margin-right: 45px;
+}
+.topDiv {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  width: 100%;
+  height: 350px;
+  position: fixed;
+  top: 0px;
+  background-color: #fafdfa;
+}
+.set {
+  height: 200px;
+  position: fixed;
+  bottom: 120px;
+  flex-direction: column;
+  background-color: #fafdfa;
+}
+.set-else {
+  height: 200px;
+  position: fixed;
+  bottom: 0px;
+  flex-direction: column;
+  background-color: #fafdfa;
+}
+.set-text-div {
+  padding-top: 20px;
+  height: 106px;
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: #fafdfa;
+}
+.set-bright-div {
+  height: 94px;
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: #fafdfa;
+}
+.set-text-bright {
+  width: 85px;
+  text-align: center;
+  margin-left: 10px;
+  height: 94px;
+}
+.set-text {
+  width: 85px;
+  text-align: center;
+  margin-left: 10px;
+  height: 50px;
+}
+.doc-row {
+  justify-content: center;
+}
+.input-button {
+  width: 150px;
+  height: 50px;
+  line-height: 50px;
+  padding-left: 30px;
+  padding-right: 30px;
+  margin-left: 10px;
+  margin-right: 10px;
+  border: 1px;
+  border-width: 2px;
+  font-size: 30px;
+  text-align: center;
+}
+.color-4 {
+  width: 180px;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+.eye {
+  margin-right: 30px;
+}
+.flex-grow {
+  width: 55px;
+  height: 50px;
+  flex-grow: 1;
+}
+.flex-grow-lable {
+  height: 50px;
+  width: 150px;
+  text-align: center;
+}
+/* 目录弹框 */
+.list-wrap {
+  position: fixed;
+  height: 100%;
+  background-color: #ffffff;
+  flex-direction: column;
+}
+.list-wrap .list-wrap-title {
+  justify-content: space-between;
+  padding: 30px;
+  background-color: #222222;
+}
+.list-wrap .list-wrap-title .image {
+  width: 50px;
+  height: 50px;
+}
+.list-wrap .list-wrap-title .reverse {
+  font-size: 30px;
+  color: #ffffff;
+}
+.list-wrap .list {
+  padding-top: 20px;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+.list-wrap .list .list-item {
+  font-size: 30px;
+  height: 65px;
+  line-height: 75px;
+  border-bottom-width: 1px;
+  border-color: #cccccc;
+}
+.list-wrap .list .list-item .txt {
+  width: 100%;
+}
+.list-wrap .list .load-more {
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  border-color: #bbbbbb;
+  border-bottom-width: 1px;
+  margin-bottom: 15px;
+}
+.refresh {
+  flex-direction: column;
+}
+.guide-open-vip {
+  height: 500px;
+  flex-direction: column;
+}
+.vip-fenge-line-div {
+  height: 2px;
+  width: 100%;
+  flex-direction: row;
+}
+.fenge-line1 {
+  height: 1px;
+  width: 120px;
+  margin-left: 30px;
+  background-color: #bfbfbf;
+}
+.fenge-line2 {
+  height: 1px;
+  width: 120px;
+  margin-right: 30px;
+  margin-left: auto;
+  background-color: #bfbfbf;
+}
+.guide-openvip-div {
+  height: 500px;
+  width: 100%;
+  margin-top: auto;
+  margin-bottom: 0px;
+  flex-direction: column;
+  border-radius: 20px;
+}
+.guide-openvip-div-text {
+  margin-top: 30px;
+  color: #a4a4a4;
+  font-size: 25px;
+  text-align: center;
+}
+.guide-openvip-div-bottom-text {
+  margin-top: 0px;
+  color: #a4a4a4;
+  font-size: 25px;
+  text-align: center;
+}
+.guide-openvip-safetxt {
+  margin-top: 50px;
+  color: #545c67;
+  font-size: 26px;
+  text-align: center;
+}
+.guide-openvip-div-button {
+  flex-direction: column;
+  justify-content: center;
+  height: 90px;
+  margin-top: 50px;
+  margin-left: 80px;
+  margin-right: 80px;
+  border-radius: 50px;
+  background-color: #f85836;
+  align-items: center;
+}
+.openvip-button-text {
+  font-size: 35px;
+  color: #ffffff;
+}
+.mask-view {
+  flex-direction: column;
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(129, 127, 127, 0.4);
+  align-items: center;
+  justify-content: center;
+}
+.open-vip-dialog-view-div {
+  width: 600px;
+  height: 400px;
+  background-color: #ffffff;
+  border-radius: 20px;
+  flex-direction: column;
+  align-items: center;
+}
+.dialog-close-image {
+  height: 36px;
+  width: 36px;
+  margin-top: 30px;
+  margin-right: 40px;
+  margin-left: auto;
+}
+.dialog-openvip-txt1 {
+  color: #1e252f;
+  font-size: 40px;
+  margin-top: 25px;
+}
+.dialog-openvip-txt2 {
+  color: #1e252f;
+  font-size: 30px;
+  margin-top: 25px;
+}
+.dialog-openvip-txtbutton {
+  background-color: #f85836;
+  width: 400px;
+  height: 70px;
+  text-align: center;
+  font-size: 40px;
+  color: #feffff;
+  margin-top: 45px;
+  border-radius: 40px;
+}
+.banner-ad {
+  position: fixed;
+  bottom: 0px;
+  height: 100px;
+  flex-direction: row;
+  justify-content: space-between;
+  background-color: #808080;
+  border-radius: 20px;
+}
+.bottom-ad-position {
+  position: fixed;
+  bottom: 0px;
+  height: 100px;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.close-ad-div {
+  height: 40px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0);
+}
+.close-ad-div-buttontxt {
+  position: fixed;
+  height: 40px;
+  width: 120px;
+  right: 20px;
+  bottom: 120px;
+  background-color: rgb(156, 156, 156);
+  border-radius: 20px;
+  align-items: center;
+  font-size: 30px;
+  text-align: center;
+  color: #ffffff;
+}
+.close-ad-div-buttontxt1 {
+  position: fixed;
+  height: 40px;
+  width: 120px;
+  transform: translateX(550px);
+  background-color: rgb(156, 156, 156);
+  border-radius: 20px;
+  align-items: center;
+  font-size: 30px;
+  text-align: center;
+  color: #ffffff;
+}

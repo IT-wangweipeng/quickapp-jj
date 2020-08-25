@@ -1,0 +1,350 @@
+<import name="titleBar" src="../../Common/titleBar"></import>
+
+<template>
+  <div class="display">
+    <titleBar title="{{titileName}}" onleft-button-clicked="skipPreferenceSet" left-button="../../Common/images/arrow-left-0.png" if="{{isFromeMine == 1}}">
+    </titleBar>
+    <titleBar title="{{titileName}}" onleft-button-clicked="skipPreferenceSet" left-button="../../Common/images/arrow-left-0.png" if="{{isFromeMine == 2}}" right-Text="{{jump}}" onright-button-clicked="skipPreferenceSet">
+    </titleBar>
+    <!-- 列表 -->
+    <list class="content" id="content" columns="1">
+      <block for="{{finishPreList}}">
+        <list-item type="content{{$item.tag}}" class="content-item">
+
+          <div class="content-title">
+            <text class="title-text" if="{{$item.tag == 1}}">男生频道</text>
+            <text class="title-text" if="{{$item.tag == 2}}">女生频道</text>
+            <text class="title-text" if="{{$item.tag == 3}}">图书频道</text>
+          </div>
+
+          <div class="choose-content-item">
+            <block for="{{$item.list}}">
+              <text class="{{$item.cla}}" id="{{$item.id}}" onclick="selcet($item.id)">{{$item.neme}}</text>
+            </block>
+          </div>
+
+        </list-item>
+      </block>
+    </list>
+
+    <!-- 确认按钮 -->
+    <div class="login-button-can" @click="submitUserPreference">
+      <text class="login-text">{{confirmButtonTxt}}</text>
+    </div>
+
+  </div>
+</template>
+
+<style>
+.display {
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
+  flex-direction: column;
+  margin-left: 30px;
+  margin-right: 10px;
+}
+
+.content-title {
+  width: 100%;
+  height: 100px;
+  text-align: center;
+  background-color: #ffffff;
+}
+.title-text {
+  color: #000000;
+  font-size: 35px;
+}
+
+.content-item {
+  flex-direction: column;
+}
+
+.choose-content-item {
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.item-text {
+  height: 100px;
+  width: 216px;
+  color: #808080;
+  text-align: center;
+  background-color: #f0f0f5;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  border-radius: 20px;
+}
+.select-item-text {
+  height: 100px;
+  width: 216px;
+  color: #ff0000;
+  text-align: center;
+  background-color: #ffffff;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  border-radius: 20px;
+  border-width: 1px;
+  border-color: #ff0000;
+}
+
+.login-button-can {
+  flex-direction: column;
+  justify-content: center;
+  height: 90px;
+  margin-top: 30px;
+  margin-left: 80px;
+  margin-right: 80px;
+  margin-bottom: 30px;
+  border-radius: 50px;
+  background-color: rgb(255, 75, 63);
+  align-items: center;
+}
+.login-text {
+  font-size: 35px;
+  color: #ffffff;
+}
+
+.choose-list {
+  flex-wrap: wrap;
+  width: 100%;
+  margin-left: 15px;
+  margin-right: 15px;
+}
+
+.small-content-item {
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.small-item {
+  flex-wrap: wrap;
+  height: 50px;
+  margin-left: 15px;
+  margin-right: 15px;
+  background-color: #f0f0f5;
+}
+</style>
+
+<script>
+import { allPreferenceApi, getUserBeforePreferenceApi, submitUserPreferenceApi } from '../../Common/api/api.js'
+
+import router from '@system.router'
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+
+export default {
+
+  private: {
+    jump: '跳过',
+    titileName: '阅读口味',
+    userHadSelectArr: [],//用户之前选的
+    userSelectingArr: [],//用户刚选的
+    userSelectedNum: 0,//用户选了几个
+    allPreferenceList: [],//拉取的全部分类及偏好
+    finishPreList: [],
+    allIdList: [],//只保留id的全部偏好list
+    confirmButtonTxt: '确认',
+    itemClass: '',//用来动态更新用户选与取消选的cla
+    token: '',
+  },
+
+  protected: {
+    isFromeMine: '1',//1是从我的来，2是从设置性别来
+    isFrom: 'mine'
+  },
+
+  onInit() {
+    this.token = this.$app.$def.token
+    this.getUserHadSetPrefer()
+  },
+
+  getUserHadSetPrefer() {
+
+    let tokenD = { token: this.token }
+
+    getUserBeforePreferenceApi(tokenD)
+      .then((ret) => {
+        this.userHadSelectArr = ret
+        if (ret.length > 0) {
+          this.userHadSelectArr = ret
+        } else {
+          this.userHadSelectArr = []
+        }
+        this.getallPreference()
+
+      })
+      .catch((error) => {
+        prompt.showToast({
+          message: '用户偏好数据获取失败，请返回重试',
+          duration: 1
+        })
+      })
+  },
+
+  getallPreference() {
+
+    allPreferenceApi()
+      .then((ret) => {
+        for (let i = 0; i < ret.length; i++) {//给每个偏好增加class 方便控制,
+          for (let j = 0; j < ret[i].list.length; j++) {
+            ret[i].list[j].cla = 'item-text'
+          }
+        }
+        this.allPreferenceList = ret
+        this.addClassToItem()//处理数据
+
+      })
+      .catch((error) => {
+        prompt.showToast({
+          message: '数据获取失败，请返回重试',
+          duration: 1
+        })
+      })
+  },
+
+  addClassToItem() {
+
+    this.finishPreList = this.allPreferenceList
+
+    if (this.userHadSelectArr.length > 0) {
+      //用户之前有选择
+      for (let z = 0; z < this.userHadSelectArr.length; z++) {
+        for (let i = 0; i < this.finishPreList.length; i++) {
+          for (let x = 0; x < this.finishPreList[i].list.length; x++) {
+            if (this.finishPreList[i].list[x].id == this.userHadSelectArr[z].id) {
+              this.finishPreList[i].list[x].cla = 'select-item-text'
+              this.userSelectingArr.push(this.userHadSelectArr[z].id)
+            }
+          }
+        }
+      }
+
+      this.userSelectedNum = this.userSelectingArr.length
+      this.confirmButtonTxt = '确认' + '(' + this.userSelectedNum + '/' + '5' + ')'
+
+    } else {
+      //用户之前无选择
+      this.userSelectingArr = [];
+      this.userSelectedNum = this.userSelectingArr.length
+      this.confirmButtonTxt = '确认' + '(' + this.userSelectedNum + '/' + '5' + ')'
+    }
+  },
+
+
+  selcet(id) {
+    //选择某个偏好
+    if (this.userSelectingArr.find(item => item == id) > 0) {
+
+      this.userSelectingArr.splice(this.userSelectingArr.findIndex(item => item === id), 1)
+      for (let i = 0; i < this.finishPreList.length; i++) {//给每个偏好增加class 方便控制,
+        for (let x = 0; x < this.finishPreList[i].list.length; x++) {
+          if (this.finishPreList[i].list[x].id == id) {
+            this.finishPreList[i].list[x].cla = 'item-text'
+          }
+        }
+      }
+
+    } else {
+
+      if (this.userSelectingArr.length >= 5) {
+
+        prompt.showToast({
+          message: '最多只能选择5个标签',
+          duration: 1
+        })
+        return
+      }
+
+      this.userSelectingArr.push(id)
+      for (let i = 0; i < this.finishPreList.length; i++) {//给每个偏好增加class 方便控制,
+        for (let x = 0; x < this.finishPreList[i].list.length; x++) {
+          if (this.finishPreList[i].list[x].id == id) {
+            this.finishPreList[i].list[x].cla = 'select-item-text'
+          }
+        }
+      }
+    }
+
+    this.userSelectedNum = this.userSelectingArr.length
+    this.confirmButtonTxt = '确认' + '(' + this.userSelectedNum + '/' + '5' + ')'
+  },
+
+  submitUserPreference() {
+    let submitData = {
+      token: this.token,
+      category_ids: this.userSelectingArr,
+    }
+
+    submitUserPreferenceApi(submitData)
+      .then((ret) => {
+        if (this.isFrom == 'openVIP') {
+          router.replace({
+            uri: 'MemberCenter'
+          })
+
+        } else {
+
+          if (this.isFromeMine === '1') {
+            router.back()
+            prompt.showToast({
+              message: '保存成功',
+              duration: 1
+            })
+
+          } else {
+            router.back({
+              path: '/TabBar'
+            })
+          }
+        }
+
+      })
+      .catch((error) => {
+        prompt.showToast({
+          message: '上传失败请重试',
+          duration: 1
+        })
+      })
+  },
+
+
+  skipPreferenceSet() {
+    let updateUserInfoChannel = new BroadcastChannel('autoLogin')
+    updateUserInfoChannel.postMessage('autoLogin')
+    
+    if (this.isFrom == 'openVIP') {
+
+      router.replace({
+        uri: 'MemberCenter'
+      })
+
+    } else {
+
+      if (this.isFromeMine === '1') {
+        router.back()
+      } else {
+        //去书城
+        let skipSexSetChannel = new BroadcastChannel('userSkipSexSetChannel')
+        skipSexSetChannel.postMessage('userSkipSexSetChannel')
+
+        router.back({
+          path: '/TabBar'
+        })
+      }
+    }
+
+  },
+
+  onBackPress() {
+    if (this.isFromeMine === '2') {
+      return true
+    }
+  }
+}
+</script>
+
+

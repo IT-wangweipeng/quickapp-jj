@@ -1,0 +1,617 @@
+<import name="emptyTip" src="../../Common/noNetworkTipView.ux"></import>
+ 
+<template>
+  <div class="main-page">
+    <refresh class="refresh" onrefresh="refresh" refreshing="{{isRefreshing}}">
+      <list class="list-content" id="list" style="columns:1" if="{{!showEmptyTip}}">
+
+        <list-item type="swiper-ad" if="{{showBanner}}">
+          <swiper class="banner-ad-swiper" autoplay="true" loop="true" interval="3000" indicator-color="#A9A9A9" indicator-selected-color="#FFFFFF" indicator-size="15px">
+            <block for="{{banneradlist}}">
+              <image class="banner-image" src="{{$item.image}}" onclick="openByAdUrlOrBookId($item)"></image>
+            </block>
+          </swiper>
+        </list-item>
+
+        <!-- icon -->
+        <list-item type="icon" if="{{showIcon}}">
+          <div class="icon-div">
+            <block for="{{iconData}}">
+              <div class="icon-item-div" onclick="clickIconMethod($item)">
+                <image class="icon-item-div-image" src="{{$item.image}}"></image>
+                <text class="icon-item-div-txt">{{$item.name}}</text>
+              </div>
+            </block>
+          </div>
+        </list-item>
+
+        <!-- 配置模块  sex: 3:精选，1：男生，2：女生，4：图书-->
+        <!-- 样式类型  1,限时免广告,  2三本书,  3单本书,  4单图,  5作家,  6双图,  7左字右图 -->
+        <list-item type="configurateMode" if="{{showConfigurateMode}}">
+          <div class="configurate-mode-div">
+            <block for="{{configurateModeData}}">
+
+              <!--1 限时免广告 ？-->
+              <div class="mode-item-div-one" if="{{$item.type === 1}}" show="{{showLimiteMode}}">
+                <div class="mode-one-div">
+                  <text type="title" class="mode-common-title">{{$item.title}}</text>
+                  <text type="count-down-time" class="mode-one-div-countdowntime">{{xianMianCountDown}}</text>
+                </div>
+                <div class="mode-two-div">
+                  <block for="{{$item.list}}">
+                    <div class="mode-two-div-item" onclick="modeItemClick($item)">
+                      <stack>
+                        <image class="mode-two-div-image" src="{{$item.cover}}"></image>
+                        <image class="book-teshu-biaoshi" src="../../Common/images/xianmian_book_bage_icon.png"></image>
+                      </stack>
+                      <text class="mode-two-div-title">{{$item.name}}</text>
+                      <text class="mode-two-div-popTxt">{{($item.popularity/10000).toFixed(1)+'万人气'}}</text>
+                    </div>
+                  </block>
+                </div>
+              </div>
+
+              <!--2 三本书 -->
+              <div class="mode-item-div-two" if="{{$item.type === 2}}">
+                <text type="title" class="mode-common-title">{{$item.title}}</text>
+                <div class="mode-two-div">
+                  <block for="{{$item.list}}">
+                    <div class="mode-two-div-item" onclick="modeItemClick($item)">
+                      <image class="mode-two-div-image" src="{{$item.cover}}"></image>
+                      <text class="mode-two-div-title">{{$item.name}}</text>
+                      <text class="mode-two-div-popTxt">{{($item.popularity/10000).toFixed(1)+'万人气'}}</text>
+                    </div>
+                  </block>
+                </div>
+              </div>
+
+              <!--3 单本书 -->
+              <div class="mode-item-div-three" if="{{$item.type === 3}}" onclick="goToDetail($item.list[0].id)">
+                <text type="title" class="mode-common-title">{{$item.title}}</text>
+                <div class="mode-three-div">
+                  <stack>
+                    <image class="mode-three-image" src="{{$item.list[0].cover}}"></image>
+                    <image class="book-teshu-biaoshi" src="../../Common/images/zuijia_book_bage_icon.png"></image>
+                  </stack>
+
+                  <div class="mode-three-bookinfo-div">
+                    <text class="mode-three-bookname">{{$item.list[0].name}}</text>
+                    <text class="mode-three-bookauthor">{{$item.list[0].author}}</text>
+                    <text class="mode-three-bookcate">{{$item.list[0].category_name}}</text>
+                  </div>
+                  <text class="mode-three-book-score">{{$item.list[0].score + '分'}}</text>
+                </div>
+                <text class="mode-three-book-desc">{{$item.desc}}</text>
+              </div>
+
+              <!--4 单图 -->
+              <div class="mode-item-div-four" if="{{$item.type === 4}}" onclick="modeItemClick($item.list[0])">
+                <text type="title" class="mode-common-title">{{$item.title}}</text>
+                <image class="mode-four-image" src="{{$item.list[0].image}}"></image>
+              </div>
+
+              <!--5 作家 -->
+              <div class="mode-item-div-five" if="{{$item.type === 5}}" onclick="modeItemClick($item.list[0])">
+                <div class="mode-five-div">
+                  <image class="mode-five-div-author-image" src="{{$item.list[0].image_author}}"></image>
+                  <text class="mode-five-div-author-name">{{$item.list[0].title}}</text>
+                  <div class="mode-five-div-fengeline"></div>
+                  <text class="mode-five-div-author-desc">{{$item.desc}}</text>
+                </div>
+                <image class="mode-five-image" src="{{$item.list[0].image}}"></image>
+              </div>
+
+              <!--6 双图 -->
+              <div class="mode-item-div-six" if="{{$item.type === 6}}">
+                <block for="{{$item.list}}">
+                  <div class="mode-six-div" onclick="modeItemClick($item)">
+                    <text type="title" class="mode-six-title">{{$item.title}}</text>
+                    <image class="mode-six-image" src="{{$item.image}}"></image>
+                  </div>
+                </block>
+              </div>
+
+              <!--7 左字右图 -->
+              <div class="mode-item-div-seven" if="{{$item.type === 7}}" onclick="modeItemClick($item.list[0])">
+                <div class="mode-seven-textdiv">
+                  <text class="mode-seven-textdiv-title">{{$item.list[0].title}}</text>
+                  <text class="mode-seven-textdiv-desc">{{$item.desc}}</text>
+                </div>
+                <image class="mode-seven-image" src="{{$item.list[0].image}}"></image>
+              </div>
+
+            </block>
+          </div>
+        </list-item>
+
+        <!-- 主编力荐+换一换 -->
+        <block if="{{recommend && recommend.list.length > 0}}">
+          <list-item class="list-item" type="recommend">
+            <!-- 主编力荐-->
+            <div class="common-container">
+              <!-- label -->
+              <div class="common-item-lab-container">
+                <text class="common-item-title">{{recommend.name || ""}}</text>
+                <text class="common-item-right-title" if="{{recommend.right == 2}}" onclick="changeClick(recommend.id)">换一批</text>
+                <text class="common-item-right-title" elif="{{recommend.right == 3}}" onclick="viewmoreClick(recommend.id, recommend.name)">查看全部</text>
+              </div>
+              <!-- common item -->
+              <div class="common-item-container" onclick="goToDetail(recommend.list[0].id)">
+                <image class="common-item-icon" src="{{recommend.list[0].cover}}"></image>
+                <div class="common-item-top-right-container">
+                  <div class="common-item-top-right-title-container">
+                    <text class="common-item-name">{{recommend.list[0].name}}</text>
+                    <text class="common-item-score">{{recommend.list[0].score + '分'}}</text>
+                  </div>
+                  <text class="common-item-brief">{{recommend.list[0].brief}}</text>
+                  <div class="common-item-placeholder">
+                  </div>
+                  <div class="common-item-bottom-container">
+                    <text class="common-item-author">{{recommend.list[0].author}}</text>
+                    <text class="common-item-cateogry">{{recommend.list[0].category_name}}</text>
+                  </div>
+                </div>
+              </div>
+              <!-- four item -->
+              <div class="four-item-container">
+                <block for={{recommendRest}}>
+                  <div class="four-item-sub-container" onclick="goToDetail($item.id)">
+                    <image class="common-item-icon" src="{{$item.cover}}"></image>
+                    <text class="four-item-name">{{$item.name}}</text>
+                    <text class="four-item-popularity">{{($item.popularity/10000).toFixed(1)+'万人气值'}}</text>
+                  </div>
+                </block>
+              </div>
+            </div>
+          </list-item>
+        </block>
+
+        <block for="{{rest}}">
+          <list-item class="list-item" type="common">
+            <!-- rest -->
+            <div class="common-container">
+              <!-- label -->
+              <div class="common-item-lab-container">
+                <text class="common-item-title">{{$item.name}}</text>
+                <text class="common-item-right-title" if="{{$item.right == 2}}" onclick="changeClick($item.id)">换一批</text>
+                <text class="common-item-right-title" elif="{{$item.right == 3}}" onclick="viewmoreClick($item.id, $item.name)">查看全部</text>
+              </div>
+            </div>
+          </list-item>
+
+          <!-- common item -->
+          <block for="{{$item.list}}">
+            <list-item class="list-item" type="common-item">
+              <div class="common-item-container-list" onclick="goToDetail($item.id)">
+                <image class="common-item-icon" src="{{$item.cover}}"></image>
+                <div class="common-item-top-right-container">
+                  <div class="common-item-top-right-title-container">
+                    <text class="common-item-name">{{$item.name}}</text>
+                    <text class="common-item-score">{{$item.score + '分'}}</text>
+                  </div>
+                  <text class="common-item-brief">{{$item.brief}}</text>
+                  <div class="common-item-placeholder">
+                  </div>
+                  <div class="common-item-bottom-container">
+                    <text class="common-item-author">{{$item.author}}</text>
+                    <text class="common-item-cateogry">{{$item.category_name}}</text>
+                  </div>
+                </div>
+              </div>
+            </list-item>
+          </block>
+
+        </block>
+
+      </list>
+      <emptyTip if="{{showEmptyTip}}"></emptyTip>
+    </refresh>
+
+  </div>
+
+</template>
+
+<script>
+import router from '@system.router'
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+import * as R from 'ramda'
+import { bookMarketIndex, bookMarketChange, bookCityBannerApi, getBookCityIconApi, configurateModeApi, adControlApi } from '../../Common/api/api.js'
+
+
+//金立广告 其他手机不可用
+// import gioneeAd from '@service.ad'
+
+
+export default {
+  props: ['sex'],
+  //定义参数
+  data: {
+    isRefreshing: false,
+    recommend: null,
+    recommendRest: [],
+    rest: [],
+    banneradlist: [],
+    configurateModeData: [],
+    showBanner: false,
+    iconData: [],
+    showIcon: false,
+    showConfigurateMode: false,
+    isGetData: true,
+    token: '',
+    xianMianEndTime: '',// 接口返回格式 2019-07-04 23:59:59
+    xianMianCountDown: '',
+    SurplusTime: '',
+    showLimiteMode: true,
+    showEmptyTip: true,
+  },
+
+  onInit() {
+    this.token = this.$app.$def.token
+    this.getBannerData()
+    this.getIconData()
+    this.getConfigurateModeData()
+    this.getMarketIndexData()
+  },
+
+
+
+  onDestroy() {
+  },
+
+
+
+
+  //
+  getMarketIndexData() {
+
+    let postData = { 'token': this.token }  //推荐数据与用户关联
+    bookMarketIndex(this.sex, postData)
+      .then((ret) => {
+        if (ret.length > 0) {
+          this.recommend = R.nth(0)(ret)
+          this.recommendRest = R.slice(1, Infinity)(this.recommend.list)
+          this.rest = R.slice(1, Infinity)(ret)
+          this.showEmptyTip = false
+        } else {
+          this.recommend = null
+          this.recommendRest = []
+          this.rest = []
+        }
+        this.isRefreshing = false
+        this.isGetData = false
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        this.isRefreshing = false
+        this.isGetData = false
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  getBannerData() {
+    let bannerType
+    if (Number(this.sex) === 1) {
+      bannerType = 4
+    }
+    if (Number(this.sex) === 2) {
+      bannerType = 5
+    }
+    if (Number(this.sex) === 3) {
+      bannerType = 1
+    }
+    if (Number(this.sex) === 4) {
+      bannerType = 9
+    }
+    if (Number(this.sex) === 5) {
+      bannerType = 13
+    }
+    bookCityBannerApi(bannerType)
+      .then((ret) => {
+        if (ret.length > 0) {
+          this.banneradlist = ret
+          this.showBanner = true
+          this.showEmptyTip = false
+        } else {
+          this.banneradlist = []
+          this.showBanner = false
+        }
+        this.isGetData = false
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        this.showBanner = false
+        this.isGetData = false
+      })
+
+  },
+
+  getIconData() {
+    getBookCityIconApi(this.sex)
+      .then((ret) => {
+        if (ret.length > 0) {
+          this.iconData = ret
+          this.showIcon = true
+          this.showEmptyTip = false
+        } else {
+          this.iconData = []
+          this.showIcon = false
+        }
+        this.isGetData = false
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        this.showIcon = false
+        this.isGetData = false
+      })
+  },
+
+  getConfigurateModeData() {
+    //icon下方主编力荐上方可编辑模块
+    configurateModeApi(this.sex)
+      .then((ret) => {
+        if (ret.length > 0) {
+          let orderArr = R.sort(R.ascend(R.prop('sort')))(ret)//依照sort进行排序
+          this.configurateModeData = orderArr
+          this.showConfigurateMode = true
+          this.showEmptyTip = false
+          this.handleLimitedTime(this.configurateModeData)
+        } else {
+          this.configurateModeData = []
+          this.showConfigurateMode = false
+        }
+        this.isGetData = false
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        this.showConfigurateMode = false
+        this.isGetData = false
+      })
+  },
+
+  //处理限免三本书模块倒计时
+  handleLimitedTime(dataList) {
+    const self = this
+    for (let i = 0; i < dataList.length; i++) {
+      let item = dataList[i]
+      if (Number(item.type) === 1) {
+        //只对限免模块type===1做处理 因未配置 暂时判断2  后续改为1
+        this.xianMianEndTime = item.end_time
+        this.dealWithTheCountDownTime(this.xianMianEndTime)
+        break
+      }
+    }
+  },
+
+  dealWithTheCountDownTime(endDate) {
+    //得到截止时间戳
+    let endTimeDate = new Date(endDate)
+    let endTimestamp = endTimeDate.getTime()
+    //获取当前时间戳
+    let nowTimestamp = Date.parse(new Date())
+    this.SurplusTime = endTimestamp - nowTimestamp
+
+    if (Number(this.SurplusTime) > 0) {//还在有效期内
+      this.showLimiteMode = true
+      //倒计时核心方法
+      let interval = setInterval(() => {
+
+        this.SurplusTime -= 1000
+
+        let dd = parseInt(this.SurplusTime / 1000 / 60 / 60 / 24, 10)//计算剩余的天数
+        let hh = parseInt(this.SurplusTime / 1000 / 60 / 60 % 24, 10)//计算剩余的小时数
+        let mm = parseInt(this.SurplusTime / 1000 / 60 % 60, 10)//计算剩余的分钟数
+        let ss = parseInt(this.SurplusTime / 1000 % 60, 10)//计算剩余的秒数
+
+        this.xianMianCountDown = dd + '天' + hh + '小时' + mm + '分' + ss + '秒'
+        if (Number(this.SurplusTime) <= 0) {
+          this.xianMianCountDown = '活动结束'
+          // this.showLimiteMode = false
+          clearInterval(interval)
+        }
+      }, 1000)
+
+    } else {
+      this.showLimiteMode = false
+    }
+  },
+
+  refresh(e) {
+    this.isRefreshing = e.refreshing
+    this.getBannerData()
+    this.getIconData()
+    this.getConfigurateModeData()
+    this.getMarketIndexData()
+  },
+  changeClick(id) {
+    $umeng_stat.trackEvent('market_more_refresh_item_clicked', { tab: this.sex , user_imei: this.$app.$def.IMEI})
+    bookMarketChange(id)
+      .then((ret) => {
+        const data = ret
+        if (data.id === this.recommend.id) {
+          data.name = this.recommend.name
+          data.right = this.recommend.right
+          this.recommend = data
+          this.recommendRest = R.slice(1, Infinity)(data.list)
+        } else {
+          var index = 0
+          for (var i = 0; i <= this.rest.length; i++) {
+            if (data.id === this.rest[i].id) {
+              index = i
+              data.name = this.rest[i].name
+              data.right = this.rest[i].right
+              break
+            }
+          }
+          this.rest.splice(index, 1, data)
+        }
+      })
+      .catch((error) => {
+        console.log('error=', error)
+      })
+  },
+  viewmoreClick(id, name) {
+    $umeng_stat.trackEvent('market_more_clicked', { tab: this.sex , user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    router.push({
+      uri: 'Market/ViewMore',
+      params: {
+        id: id,
+        name: name,
+      }
+    })
+  },
+  goToDetail(bookId) {
+    router.push({
+      uri: 'BookDetail',
+      params: {
+        bookId: bookId,
+      }
+    })
+  },
+  goToWebview(url) {
+    router.push({
+      uri: 'WebView',
+      params: {
+        url: url,
+      }
+    })
+  },
+
+
+  openByAdUrlOrBookId(item) {
+    switch (item.type) {
+      case 1:
+        $umeng_stat.trackEvent('')
+        //图书
+        this.goToDetail(item.url)
+        break;
+      case 2:
+        $umeng_stat.trackEvent('')
+        router.push({
+          uri: 'WebView',
+          params: {
+            url: item.url,
+          }
+        })
+        break
+
+      default:
+        break
+    }
+  },
+
+  clickIconMethod(icon) {
+    $umeng_stat.trackEvent('icon_item_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    var sexType
+    if (Number(this.sex) === 1) {
+      sexType = 1
+    } else if (Number(this.sex) === 2) {
+      sexType = 2
+    } else if (Number(this.sex) === 4) {
+      sexType = 3
+    } else {
+      sexType = 1
+    }
+
+    switch (icon.type) {
+      case 1:
+        //分类
+        router.push({
+          uri: 'Category/CategoryListPage',
+          params: {
+            category_id: icon.category_id,
+            sex: 1,
+            title: icon.category_title,
+          }
+        })
+        break
+
+      case 2:
+        //发现（？暂无）
+        break
+
+      case 3:
+        //链接
+        router.push({
+          uri: 'WebView',
+          params: {
+            url: icon.url
+          }
+        })
+        break
+
+      case 4:
+        //排行&人气
+        $umeng_stat.trackEvent('icon_popular_item_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+        router.push({
+          uri: 'IconPages/Ranking',
+          params: {
+            sex: sexType,
+          }
+        })
+        break
+
+      case 5:
+        //完本
+        $umeng_stat.trackEvent('icon_complete_item_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+        router.push({
+          uri: 'IconPages/Serialie',
+          params: {
+            sex: sexType,
+            iconType: 'complete'
+          }
+        })
+        break
+
+      case 6:
+        //连载
+        $umeng_stat.trackEvent('icon_serialization_item_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+        router.push({
+          uri: 'IconPages/Serialie',
+          params: {
+            sex: sexType,
+            iconType: 'serialization'
+          }
+        })
+        break
+
+      case 7:
+        //短篇shortstory
+        router.push({
+          uri: 'IconPages/Serialie',
+          params: {
+            sex: sexType,
+            iconType: 'shortstory'
+          }
+        })
+
+        break
+
+      case 9:
+        //VIP
+        var changeToVipChannel = new BroadcastChannel('changeToVipChannel')
+        changeToVipChannel.postMessage('changeToVipChannel')
+        break
+
+      default:
+        break
+    }
+  },
+
+  modeItemClick(item) {
+    $umeng_stat.trackEvent('mode_item_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    if (item.jump_type === 1) {
+      this.goToDetail(item.jump_url)//jump_url后台兼容 bookId和url 
+    }
+    if (item.jump_type === 2) {
+      this.goToWebview(item.jump_url)
+    }
+  },
+}
+</script>
+
+<style>
+@import "../index.css";
+</style>

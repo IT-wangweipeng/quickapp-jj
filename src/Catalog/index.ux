@@ -1,0 +1,362 @@
+<import name="titleBar" src="./../common/titleBar"></import>
+<template>
+  <div class="doc-page">
+    <!-- 自定义title -->
+    <div class="title">
+      <titleBar title="目录" onleft-button-clicked="onLeftButtonClicked" left-button="./../Common/images/arrow-left-0.png"></titleBar>
+    </div>
+    <text class="reverse" onclick="toreverse">{{orderTypeText}}</text>
+    <!-- 目录列表 -->
+    <list class="list" onscrollbottom="scrollbottom" onscrolltop="scrolltop" id="chapterList">
+      <list-item type="list" class="list-item" for="{{catalogList}}">
+        <text class="txt" style="{{$item.id==cid?&quot;color:red&quot;:&quot;&quot;}}" onclick="toChapterDetail($item.id)">{{ $item.chapterName }}
+        </text>
+        <image class="vip-image" src="../Common/images/vipcatalog.jpg" show="{{$item.isvip === 1}}"></image>
+      </list-item>
+      <!-- 加载更多，type属性自定义命名为loadMore -->
+      <list-item type="loadStatus" class="load-status">
+        <progress type="circular" show="{{ hasMoreData }}"></progress>
+        <text show="{{ hasMoreData }}">加载中...</text>
+        <text show="{{ !hasMoreData }}">没有更多了~</text>
+      </list-item>
+    </list>
+  </div>
+</template>
+
+<script>
+import { bookCatalogApi } from '../Common/api/api.js'
+
+import prompt from '@system.prompt'
+import router from '@system.router'
+import storage from '@system.storage'
+import fetch from '@system.fetch'
+import share from '@system.share'
+import device from '@system.device'
+
+export default {
+  private: {
+    hasMoreData: true,
+    catalogList: [],
+    pageName: 1,
+    topPage: 1,
+    bottomPage: 1,
+    orderType: 0,
+    orderTypeText: '倒序',
+    chapterId: 1,
+    IMEI: '',
+    deviceModel: '',
+    cidInfo: {
+      bookId: '',
+      cid: ''
+    },
+    manyBookCidArr: []
+  },
+  protected: {
+    bookId: '',
+    picUrl: '',
+    bookName: '',
+    cid: '' || 1,
+    web: '',
+    isFromDetail: false
+  },
+  onInit() {
+    this.cidInfo.bookId = this.bookId
+    this.cidInfo.cid = this.cid
+    storage.set({
+      key: 'SingleCid',//单本书“具体章节”
+      value: this.cidInfo
+    })
+    //缓存所有要加入的书籍"具体章节"的数组
+    storage.get({
+      key: 'SingleCid',
+      success: data => {
+        if (data != '' && data != '[]') {
+          this.manyBookCidArr.unshift(JSON.parse(data))
+          storage.get({
+            key: 'manyBookCid',
+            success: data => {
+              if (data != '' && data != '[]') {
+                this.manyBookCidArr = this.manyBookCidArr.concat(JSON.parse(data))
+                this.manyBookCidArr = this.arrayObjectDeleteRepeat(this.manyBookCidArr)
+                storage.set({
+                  key: 'manyBookCid',
+                  value: this.manyBookCidArr
+                })
+              } else {
+                storage.set({
+                  key: 'manyBookCid',
+                  value: this.manyBookCidArr
+                })
+              }
+            }
+          })
+        }
+      }
+    })
+    if (this.web == 'y') {
+      this.picUrl = decodeURIComponent(this.picUrl)
+    }
+    this.getIMEI()
+
+    let upage = Math.ceil(this.cid / 50)
+    this.topPage = upage
+
+    this.getInitData(this.bottomPage)
+  },
+
+  onShow() {
+    $umeng_stat.resume(this) //搜索页统计页面停留时间
+  },
+  onHide() {
+    $umeng_stat.pause(this)
+  },
+
+
+  getBrowseCacheArr() {
+    //获取浏览记录缓存数组
+    storage.get({
+      key: 'D',
+      success: data => {
+        if (data != '' && data != '[]' && data != null) {
+          this.get_book_browse_arr = this.get_book_browse_arr.concat(JSON.parse(data)).reverse();
+          this.get_book_browse_arr = this.arrayObjectDeleteRepeat(this.get_book_browse_arr)
+
+          //let currentIndex = this.get_book_browse_arr.findIndex(item => item.bookId == this)
+          // prompt.showToast({
+          //     message:this.index
+          // })
+          // console.info(this.get_book_browse_arr, '浏览缓存数组');
+        }
+      }
+    })
+  },
+
+  getInitData(p) {
+
+    bookCatalogApi(this.bookId, this.bottomPage, this.orderType)
+      .then((ret) => {
+        this.catalogList = this.catalogList.concat(ret.list)
+        this.hasMoreData = ret.hasMore
+
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  //下拉加载
+  scrollbottom() {
+    this.bottomPage += 1
+    bookCatalogApi(this.bookId, this.bottomPage, this.orderType)
+      .then((ret) => {
+        this.isRefreshing = false
+        this.catalogList = this.catalogList.concat(ret.list)
+        this.hasMoreData = ret.hasMore
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  //倒序&正序
+  toreverse() {
+
+    $umeng_stat.trackEvent('catalog_reverse_click', { user_id: this.IMEI, book_id: this.bookId })
+
+    //倒序正序请求
+    this.bottomPage = 1
+    this.catalogList = []
+    if (Number(this.orderType) === 0) {
+      this.orderType = 1
+      this.orderTypeText = '正序'
+    } else {
+      this.orderType = 0
+      this.orderTypeText = '倒序'
+    }
+
+    bookCatalogApi(this.bookId, this.bottomPage, this.orderType)
+      .then((ret) => {
+        this.catalogList = this.catalogList.concat(ret.list)
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+
+  //去阅读页
+  toChapterDetail(id) {
+    //目录页点击	√	catalog_click
+    $umeng_stat.trackEvent('catalog_click', { user_id: this.IMEI, book_id: this.bookId })
+
+    if (this.isFromDetail) {
+      router.replace({
+        uri: '/NovelContent',
+        params: {
+          bookId: this.bookId,
+          cid: id,
+          picUrl: this.picUrl,
+          bookName: this.bookName,
+          isFromCatalog: true
+        }
+      })
+
+    } else {
+      router.back()
+      router.replace({
+        uri: '/NovelContent',
+        params: {
+          bookId: this.bookId,
+          cid: id,
+          picUrl: this.picUrl,
+          bookName: this.bookName,
+          isFromCatalog: true
+        }
+      })
+    }
+  },
+
+
+  scrolltop() {
+    this.topPage -= 1
+    if (this.topPage > 0) {
+      let t = new Date().getTime()
+      let s = this.$app.$def.sign(t)
+      let v = this.$app.$def.vertion()
+      let test_domain = this.$app.domain() //获取测试域名
+      let catalogList_url = test_domain + '/book/chapterList' //测试章节目录列表
+      fetch.fetch({
+        url: catalogList_url,
+        data: {
+          bookId: this.bookId,
+          page: this.topPage,
+          v: v,
+          t: t,
+          s: s,
+          pageSize: '50',
+          orderType: this.orderType
+        },
+        success: res => {
+          if (res.code == 200) {
+            let result = JSON.parse(res.data)
+            this.catalogList = result.body.data.concat(this.catalogList)
+            this.$element('chapterList').scrollTo({ index: 45 })
+          }
+        }
+      })
+    }
+  },
+
+  arrayObjectDeleteRepeat(objarray) {
+    const res = new Map()
+    return objarray.filter(a => !res.has(a.bookId) && res.set(a.bookId, 1))
+  },
+
+  onLeftButtonClicked() {
+    router.back()
+  },
+  getIMEI() {
+    //获取设备唯一标识 imei
+    storage.get({
+      key: 'IMEI',
+      success: ret => {
+        this.IMEI = ret
+      }
+    });
+    storage.get({
+      key: 'deviceModel',
+      success: ret => {
+        this.deviceModel = ret
+      }
+    });
+    storage.get({
+      key: 'D',
+      success: data => {
+        if (data != '' && data != '[]') {
+          let i = JSON.parse(data).findIndex(item => item.id === this.bookId)
+          if (i > -1) {
+            let cid = JSON.parse(data)[i].cid
+            if (cid != undefined && cid > 0) {
+              this.chapterId = cid
+            }
+          }
+        }
+      }
+    })
+  },
+
+}
+</script>
+<style>
+@import "./../Common/css/index.css";
+@import "./../Common/css/common.css";
+
+.doc-page {
+  flex-direction: column;
+}
+
+.reverse {
+  width: 100px;
+  position: fixed;
+  right: 10px;
+  top: 25px;
+  font-size: 35px;
+  color: #222222;
+}
+
+.menu {
+  flex-direction: row;
+  justify-content: space-between;
+  height: 100px;
+  padding-top: 20px;
+  padding-bottom: 20px;
+  background-color: #222222;
+}
+
+.menu image {
+  width: 40px;
+  height: 40px;
+}
+
+.list {
+  padding-top: 20px;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+
+.list .list-item {
+  flex-direction: row;
+  align-items: center;
+  font-size: 30px;
+  height: 70px;
+  line-height: 80px;
+  border-bottom-width: 0.5px;
+  border-color: #cccccc;
+}
+
+.list .list-item .txt {
+  width: 90%;
+}
+.list .list-item .vip-image {
+  width: 30px;
+  height: 34px;
+  margin-left: auto;
+  margin-right: 15px;
+}
+
+.list .load-status {
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  margin-bottom: 15px;
+}
+</style>

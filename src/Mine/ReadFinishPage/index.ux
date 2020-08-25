@@ -1,0 +1,259 @@
+<import name="titleBar" src="../../Common/titleBar"></import>
+
+<template>
+  <div class="history-page">
+
+    <titleBar title="{{titleName}}" onleft-button-clicked="back" left-button="../../Common/images/arrow-left-0.png"></titleBar>
+    <refresh offset="132px" class="refresh" onrefresh="refresh" refreshing="{{isRefreshing}}" type="{{refreshType}}">
+      <list class="browse-list" onscrollbottom="scrollbottomContent()">
+        <list-item type="listItem" class="list-item item-color" for="{{complete_arr}}" onclick="toBookDetail($item.id)" onlongpress="showDel()">
+
+          <image class="image-item" src="{{$item.cover}}"></image>
+          <div class="text-item">
+            <text class="txt text-top">{{ $item.name }}</text>
+            <text class="txt text-center">{{ $item.author }}</text>
+          </div>
+
+        </list-item>
+
+        <list-item type="loadMore" class="content-load-more" show="{{!showNoBrowseTxt}}">
+          <progress type="circular" show="{{ hasMoreData }}"></progress>
+          <text show="{{ hasMoreData }}">加载中....</text>
+          <text show="{{ !hasMoreData }}">没有更多了~</text>
+        </list-item>
+
+      </list>
+    </refresh>
+
+    <div class="no-browse-div" show="{{showNoBrowseTxt}}">
+      <text class="no-browse-txt">暂无书籍</text>
+    </div>
+
+  </div>
+</template>
+
+<style>
+.history-page {
+  flex: 1;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.book-list .list-item .txt {
+  font-size: 30px;
+  line-height: 45px;
+  text-align: left;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.browse-list {
+  flex-wrap: wrap;
+  height: 100%;
+  flex: 1;
+  margin-top: 21px;
+  margin-left: 31px;
+  margin-right: 31px;
+}
+
+.browse-list .list-item {
+  margin-top: 10px;
+  padding-bottom: 10px;
+  text-align: center;
+  flex-direction: row;
+}
+
+.browse-list .list-item .text-item {
+  margin-left: 25px;
+  flex-direction: column;
+  width: 420px;
+}
+
+.browse-list .list-item .text-item .text-top {
+  lines: 1;
+  text-overflow: ellipsis;
+  height: 105px;
+  padding-top: 60px;
+  text-align: left;
+  color: #1b1b1b;
+  font-size: 35px;
+  font-weight: bold;
+}
+
+.browse-list .list-item .text-item .text-center {
+  lines: 1;
+  text-overflow: ellipsis;
+  height: 70px;
+  line-height: 45px;
+  padding-top: 20px;
+  font-size: 30px;
+  justify-content: space-between;
+  color: #9d9d9d;
+}
+
+.browse-list .list-item .text-item .text-bottom {
+  height: 45px;
+  font-size: 24px;
+  color: #9d9d9d;
+}
+
+.content-load-more {
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  height: 80px;
+  margin-bottom: 15px;
+}
+
+.browse-list .list-item .image-item {
+  width: 168px;
+  height: 224px;
+  border-width: 5px;
+  border-color: #f4f4f4;
+  border-radius: 6px;
+}
+
+.no-browse-div {
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-browse-txt {
+  height: 50px;
+  text-align: center;
+  font-size: 35px;
+  color: #acacb9;
+}
+</style>
+
+
+<script>
+import { userCompleteBookListApi } from '../../Common/api/api.js'
+import router from '@system.router'
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+
+
+export default {
+
+  private: {
+    titleName: '读完',
+    complete_arr: [], //获取浏览缓存章节对象数组
+    styleText: 'display: none',
+    size: 5,
+    start: 0,
+    isRefreshing: false,
+    refreshType: 'pulldown',
+    hasMoreData: true,
+    showNoBrowseTxt: false
+  },
+
+  protected: {
+    token: ''
+  },
+
+  onInit() {
+    this.getcompleteArr() //页面初始化获取浏览记录缓存数据
+  },
+
+  getcompleteArr() {
+    //获取读完列表
+    let postData = {
+      'token': this.token,
+    }
+    userCompleteBookListApi(this.size, this.start, postData)
+      .then((ret) => {
+        this.complete_arr = this.complete_arr.concat(ret.complete_list)
+        if (this.complete_arr.length <= 0) {
+          this.showNoBrowseTxt = true
+        } else {
+          this.showNoBrowseTxt = false
+        }
+        if (!ret.hasMore) {
+          this.hasMoreData = false
+        } else {
+          this.hasMoreData = true
+        }
+      })
+      .catch((error) => {
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+
+  },
+
+
+  // 下拉刷新
+  refresh(e) {
+    // 更新刷新状态（属性refreshing的值从false改为true会触发refresh组件的状态更新，反之亦然）
+    this.isRefreshing = e.refreshing
+    this.complete_arr = []
+    this.size = 5
+    this.start = 0
+    let postData = {
+      'token': this.token,
+    }
+    userCompleteBookListApi(this.size, this.start, postData)
+      .then((ret) => {
+        this.complete_arr = this.complete_arr.concat(ret.complete_list)
+        if (!ret.hasMore) {
+          this.isRefreshing = false
+          this.hasMoreData = false
+        } else {
+          this.isRefreshing = false
+          this.hasMoreData = true
+        }
+
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        this.hasMoreData = false
+        this.isRefreshing = false
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  // 上拉加载
+  scrollbottomContent() {
+    this.start += 5
+    let postData = {
+      'token': this.token,
+    }
+    userCompleteBookListApi(this.size, this.start, postData)
+      .then((ret) => {
+        this.complete_arr = this.complete_arr.concat(ret.complete_list)
+        if (!ret.hasMore) {
+          this.hasMoreData = false
+        } else {
+          this.hasMoreData = true
+        }
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        this.hasMoreData = false
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  toBookDetail(id) {
+    router.push({
+      uri: 'BookDetail',
+      params: {
+        bookId: id,
+      }
+    })
+  },
+
+  back() {
+    router.back()
+  },
+}
+</script>
+

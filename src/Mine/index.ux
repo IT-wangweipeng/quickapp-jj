@@ -1,0 +1,525 @@
+<template>
+  <div style="flex-direction: column;">
+
+    <list class="list-content" id="list" style="columns:1">
+      <!-- 用户info -->
+      <list-item type="mine-info-noSign" class="mine-info-listItem" if="{{hadLogin}}">
+
+        <div class="mine-info-top" onclick="toUpdateUserInfo()">
+          <image class="head-portrait-placeholder" src="{{userInfoData.pic}}"></image>
+          <text class="name-click">{{decodeURIComponent(userInfoData.nickname)}}</text>
+          <image class="vip-image" src="../Common/images/vip.png" show="{{userInfoData.is_vip === 1}}"></image>
+        </div>
+
+        <stack class="mine-info-vip-stack" onclick="toMemberCenter">
+          <image class="mine-info-vip-image" src="{{userInfoData.is_vip === 1 ? '../Common/images/mine_vip_bg_1.png' : '../Common/images/mine_vip_bg_0.png'}}"></image>
+
+          <div class="mine-info-vip">
+            <div class="mine-info-vip-layout">
+              <image class="mine-info-vip-layout-image" src="../Common/images/crown.png" show="{{userInfoData.is_vip === 1}}"></image>
+              <text class="mine-info-vip-text1-disable {{userInfoData.is_vip === 1 ? 'mine-info-vip-text1-enable': ''}}">VIP会员</text>
+            </div>
+            <text class=" mine-info-vip-text2-disable {{userInfoData.is_vip === 1 ? 'mine-info-vip-text2-enable': ''}}">尊享无广告、VIP书籍等特权</text>
+          </div>
+
+          <div class="mine-info-vip-btn-layer">
+            <div class="mine-info-vip-btn-disable {{userInfoData.is_vip === 1 ? 'mine-info-vip-btn-enable' : ''}}" onclick="toOpenMember">
+              <text class="mine-info-vip-btn-text-disable {{userInfoData.is_vip === 1 ? 'mine-info-vip-btn-text-enable': ''}}">{{userInfoData.is_vip === 1 ? '立即续费' : '立即开通'}}</text>
+            </div>
+          </div>
+        </stack>
+
+        <div class="mine-info-bottom">
+          <div class="mine-info-bottom-txt">
+            <text class="txt-top">{{ userInfoData.today_read_ts }}</text>
+            <text class="txt-bottom">{{ txtbottom1 }}</text>
+          </div>
+          <div class="mine-info-bottom-txt" onclick="toReadOverListPage()">
+            <text class="txt-top">{{total_read}}</text>
+            <text class="txt-bottom">{{ txtbottom2 }}</text>
+          </div>
+        </div>
+      </list-item>
+
+      <list-item type="mine-info-hadSign" class="mine-info-listItem" else>
+
+        <div class="mine-info-top" onclick="toSignIn()">
+          <image class="head-portrait-placeholder" src="../Common/images/avatar_placeholder.png"></image>
+          <text class="name-click">点击登录</text>
+        </div>
+
+        <stack class="mine-info-vip-stack" onclick="toMemberCenter">
+          <image class="mine-info-vip-image" src="{{userInfoData.is_vip === 1 ? '../Common/images/mine_vip_bg_1.png' : '../Common/images/mine_vip_bg_0.png'}}"></image>
+
+          <div class="mine-info-vip">
+            <div class="mine-info-vip-layout">
+              <image class="mine-info-vip-layout-image" src="../Common/images/crown.png" show="{{userInfoData.is_vip === 1}}"></image>
+              <text class="mine-info-vip-text1-disable {{userInfoData.is_vip === 1 ? 'mine-info-vip-text1-enable': ''}}">VIP会员</text>
+            </div>
+            <text class=" mine-info-vip-text2-disable {{userInfoData.is_vip === 1 ? 'mine-info-vip-text2-enable': ''}}">尊享无广告、VIP书籍等特权</text>
+          </div>
+
+          <div class="mine-info-vip-btn-layer">
+            <div class="mine-info-vip-btn-disable {{userInfoData.is_vip === 1 ? 'mine-info-vip-btn-enable' : ''}}" onclick="toOpenMember">
+              <text class="mine-info-vip-btn-text-disable {{userInfoData.is_vip === 1 ? 'mine-info-vip-btn-text-enable': ''}}">{{userInfoData.is_vip === 1 ? '立即续费' : '立即开通'}}</text>
+            </div>
+          </div>
+        </stack>
+
+        <div class="mine-info-bottom">
+          <div class="mine-info-bottom-txt">
+            <text class="txt-top">-</text>
+            <text class="txt-bottom">{{ txtbottom1 }}</text>
+          </div>
+          <div class="mine-info-bottom-txt">
+            <text class="txt-top">-</text>
+            <text class="txt-bottom">{{ txtbottom2 }}</text>
+          </div>
+        </div>
+
+      </list-item>
+      <!-- 分割 -->
+      <list-item type="division" style="height:15px;background-color: #F1F1F6;width:100%"></list-item>
+
+      <!-- 设置列表 -->
+      <list-item type="swich-case-listItem" class="swich-case-listItem" for="{{mineSetUpList}}">
+        <div class="listItem-div" onclick="gotoRelevantPage($item)">
+          <image class="item-image-left" src="{{$item.imageSrc}}"></image>
+          <text class="item-txt">{{$item.itemName}}</text>
+          <image class="item-image-right" src="../Common/images/image_arrow_right.png"></image>
+        </div>
+      </list-item>
+
+      <!-- 退出登录 show ="{{hadLogin}}" -->
+      <list-item type="sign-out-listItem" class="login-out-listItem" if="{{hadLogin && hadLogin == true}}" show="{{hadLogin}}">
+        <div class="signOut-Item">
+          <div class="signOut-div" onclick="toSignOut()">
+            <image class="signOut-image" src="../Common/images/image_logout.png"></image>
+            <text class="signOut-txt">{{signOut}}</text>
+          </div>
+        </div>
+      </list-item>
+
+    </list>
+
+    <div class="foraddshortcut-div" if="{{foraddshortcut}}"></div>
+
+  </div>
+</template>
+
+<style>
+.tem-div {
+  flex-direction: column;
+}
+.list-content {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  flex-direction: column;
+  background-color: #f1f1f6;
+}
+
+.foraddshortcut-div {
+  background-color: #f1f1f6;
+  height: 150px;
+  width: 100%;
+  margin-bottom: 0px;
+}
+
+.mine-info-listItem {
+  flex-direction: column;
+  background-color: #ffffff;
+}
+.mine-info-top {
+  flex-direction: row;
+  margin-top: 80px;
+  align-items: center;
+}
+.mine-info-vip-stack {
+  margin-left: 32px;
+  margin-right: 32px;
+  margin-top: 32px;
+}
+.mine-info-vip-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+}
+.mine-info-vip {
+  flex-direction: column;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  padding-left: 40px;
+  padding-right: 40px;
+}
+.mine-info-vip-layout {
+  flex-direction: row;
+}
+.mine-info-vip-layout-image {
+  width: 48px;
+  height: 48px;
+  margin-right: 14px;
+}
+.mine-info-vip-text1-disable {
+  font-size: 40px;
+  color: #585d64;
+}
+.mine-info-vip-text1-enable {
+  font-size: 40px;
+  color: #060606;
+}
+.mine-info-vip-text2 {
+  margin-top: 26px;
+  font-size: 24px;
+  color: #585d64;
+}
+.mine-info-vip-text2-enable {
+  margin-top: 26px;
+  font-size: 24px;
+  color: #a88230;
+}
+.mine-info-vip-btn-layer {
+  width: 100%;
+  height: 100%;
+  justify-content: flex-end;
+  align-items: center;
+}
+.mine-info-vip-btn-disable {
+  margin-right: 48px;
+  border-width: 1px;
+  border-color: #585d64;
+  width: 150px;
+  height: 48px;
+  border-radius: 24px;
+  align-items: center;
+  justify-content: center;
+}
+.mine-info-vip-btn-enable {
+  margin-right: 48px;
+  border-width: 1px;
+  border-color: #f85836;
+  width: 150px;
+  height: 48px;
+  border-radius: 24px;
+  align-items: center;
+  justify-content: center;
+}
+.mine-info-vip-btn-text-disable {
+  font-size: 26px;
+  color: #585d64;
+}
+.mine-info-vip-btn-text-enable {
+  font-size: 26px;
+  color: #f85836;
+}
+.head-portrait-placeholder {
+  flex-shrink: 0;
+  margin-left: 60px;
+  width: 118px;
+  height: 118px;
+  border-radius: 60px;
+  border-width: 1px;
+  border-color: #f0f8ff;
+}
+.name-click {
+  margin-left: 30px;
+  font-size: 45px;
+  color: #000000;
+}
+.vip-image {
+  margin-left: 10px;
+  width: 37px;
+  height: 33px;
+}
+.mine-info-bottom {
+  flex-direction: row;
+  margin-top: 50px;
+  margin-bottom: 30px;
+  justify-content: space-around;
+}
+.mine-info-bottom-txt {
+  flex-direction: column;
+  align-items: center;
+}
+.mine-info-bottom-txt .txt-top {
+  font-size: 30px;
+  color: #ff0000;
+}
+.mine-info-bottom-txt .txt-bottom {
+  font-size: 25px;
+  color: #808080;
+}
+
+.swich-case-listItem {
+  height: 120px;
+  width: 100%;
+  background-color: #ffffff;
+}
+.swich-case-listItem .listItem-div {
+  flex-direction: row;
+  width: 100%;
+  align-items: center;
+}
+.swich-case-listItem .listItem-div .item-image-left {
+  margin-left: 30px;
+  height: 36px;
+  width: 36px;
+}
+.swich-case-listItem .listItem-div .item-txt {
+  margin-left: 35px;
+  font-size: 35px;
+  color: #000000;
+}
+.swich-case-listItem .listItem-div .item-image-right {
+  margin-left: auto;
+  margin-right: 30px;
+  height: 36px;
+  width: 30px;
+}
+
+.login-out-listItem {
+  width: 100%;
+}
+.signOut-Item {
+  height: 143px;
+  width: 100%;
+  background-color: #f1f1f6;
+  justify-content: center;
+  align-items: center;
+}
+.signOut-Item .signOut-div {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-around;
+}
+.signOut-Item .signOut-div .signOut-image {
+  margin-right: 20px;
+  width: 32px;
+  height: 37px;
+}
+.signOut-Item .signOut-div .signOut-txt {
+  font-size: 35px;
+  color: #abb1b7;
+}
+</style>
+
+<script>
+import { userLoginOutApi, getUserInfoApi, userAutomaticLoginApi, getUserTotalCompleteApi } from '../Common/api/api.js'
+import router from '@system.router'
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+
+export default {
+
+  data: {
+    token: '',
+    userInfoData: {},
+    hadLogin: false,
+    total_read: 0,
+    txtbottom1: '今日已读(分钟)',
+    txtbottom2: '读完(本)',
+    signOut: '退出登录',
+    foraddshortcut: false,
+    mineSetUpList: [
+      { imageSrc: '../Common/images/image_read_record.png', itemName: '阅读记录', itemId: 0 },
+      { imageSrc: '../Common/images/image_read_preferences.png', itemName: '阅读口味', itemId: 1 },
+      { imageSrc: '../Common/images/image_feedback.png', itemName: '意见反馈', itemId: 2 },
+      { imageSrc: '../Common/images/image_about_us.png', itemName: '关于我们', itemId: 3 },
+    ],
+  },
+
+
+  onInit() {
+    this.foraddshortcut = this.$app.$def.showAddShortcut
+
+    this.refreshUI()
+
+    const self = this
+    let updateUserInfoChannel = new BroadcastChannel('updateUserInfoSuccess')
+    updateUserInfoChannel.onmessage = function (e) {
+      if (e.data == 'updateUserInfoSuccess') {
+        self.refreshUI()
+      }
+    }
+    // 用户登录监听
+    let userLoginInSuccessChannel = new BroadcastChannel('userLoginInSuccess')
+    userLoginInSuccessChannel.onmessage = function (e) {
+      if (e.data == 'userLoginInSuccess') {
+        self.refreshUI()
+      }
+    }
+  },
+  refreshUI() {
+    this.token = this.$app.$def.token
+    this.hadLogin = this.$app.$def.hadLogin
+    this.formatUserInfo(this.$app.$def.userInfo)
+  },
+
+
+  formatUserInfo(userInfo) {
+    if (userInfo.id === undefined) {
+      this.userInfoData = {}
+      return
+    }
+
+    let finishUserData = {}
+    finishUserData.id = userInfo.id
+    finishUserData.phone = userInfo.phone
+    finishUserData.sex = userInfo.sex
+    finishUserData.nickname = userInfo.nickname
+    finishUserData.is_vip = userInfo.is_vip
+    let todayreadtime = Math.round(Number(userInfo.ts.web_ts) / 60)
+    finishUserData.today_read_ts = todayreadtime
+    if (userInfo.pic != '') {
+      finishUserData.pic = userInfo.pic
+    } else {
+      finishUserData.pic = '../Common/images/avatar_placeholder.png'
+    }
+
+    this.userInfoData = finishUserData
+    if ((this.userInfoData.id != '') && (this.userInfoData.id != undefined)) {
+      this.hadLogin = true
+    }
+
+    let postData = { 'token': this.token }
+    getUserTotalCompleteApi(postData)
+      .then((ret) => {
+        this.total_read = Number(ret)
+      })
+      .catch((error) => {
+        this.total_read = '-'
+      })
+  },
+
+  gotoRelevantPage(item) {
+    var itemId = Number(item.itemId)
+    switch (itemId) {
+      case 0:
+        // 阅读记录
+        router.push({
+          uri: '/BookShelf/ReadHistory'
+        })
+        break
+
+      case 1:
+        //阅读口味
+        if (this.$app.$def.token.length > 6 && this.$app.$def.userInfo.id > 0) {
+          router.push({
+            uri: 'Mine/PreferenceSetUp',
+            params: {
+              isFromeMine: '1'
+            }
+          })
+
+        } else {
+          router.push({
+            uri: '/Login'
+          })
+        }
+        break
+
+      case 2:
+        //反馈
+        router.push({
+          uri: '/FeedBack'
+        })
+        break
+
+      case 3:
+        //关于
+        router.push({
+          uri: '/About'
+        })
+        break
+
+      default:
+        break
+    }
+  },
+
+  toUpdateUserInfo() {
+    router.push({
+      uri: '/Mine/UpdateUserInfo',
+      params: {
+        userSex: this.userInfoData.sex,
+        userId: this.userInfoData.id,
+        userNickName: this.userInfoData.nickname,
+        token: this.token
+      }
+    })
+  },
+
+  toReadOverListPage() {
+    const self = this
+    storage.get({
+      key: 'userLoginToken',
+      success: data => {
+        router.push({
+          uri: 'Mine/ReadFinishPage',
+          params: {
+            token: data
+          }
+        })
+      }
+    })
+  },
+
+  toSignIn() {
+    router.push({
+      uri: '/Login'
+    })
+  },
+
+  toSignOut() {
+
+    let postData = { 'token': this.token }
+    userLoginOutApi(postData)
+      .then((ret) => {
+        this.hadLogin = false
+
+        const self = this
+        storage.delete({
+          key: 'userLoginToken',
+          success: function (data) {
+            self.$app.$def.token = ''
+            self.$app.$def.userInfo = {}
+            self.$app.$def.hadLogin = false
+            self.refreshUI()
+            let userLoginOutSuccessChannel = new BroadcastChannel('userLoginOutSuccess')
+            userLoginOutSuccessChannel.postMessage('userLoginOutSuccess')
+          },
+          fail: function (data, code) {
+            console.log(`handling fail, code = ${code}`)
+          }
+        })
+
+      })
+      .catch((error) => {
+        prompt.showToast({
+          message: '退出登录失败，请重试',
+          duration: 1
+        })
+      })
+  },
+  toMemberCenter() {
+    router.push({
+      uri: 'MemberCenter'
+    })
+  },
+  toOpenMember(evt) {
+    if (this.hadLogin) {
+      router.push({
+        uri: 'MemberCenter/OpenMember'
+      })
+    } else {
+      router.push({
+        uri: '/Login'
+      })
+    }
+    // 阻止事件冒泡
+    evt.stopPropagation()
+  }
+}
+</script>
+
+

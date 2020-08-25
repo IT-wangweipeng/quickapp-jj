@@ -1,0 +1,337 @@
+<template>
+  <div class="doc-page">
+    <div class="seriaType-div" show="{{isSeria}}">
+      <text class="{{seriaByTime == true? 'seriaType-div-txt' : 'seriaType-div-txt-no'}}" onclick="changeSeriaType(2)">更新时间</text>
+      <text class="{{seriaByPopular == true? 'seriaType-div-txt' : 'seriaType-div-txt-no'}}" onclick="changeSeriaType(1)">人气值</text>
+    </div>
+    <refresh class="refresh" onrefresh="refresh" refreshing="{{isRefreshing}}">
+
+      <list class="list" onscrollbottom="scrollbottomList">
+
+        <block for="{{list}}">
+          <list-item type="product" class="content-item">
+            <div class="common-item-container" onclick="toDetail($item.id)">
+
+              <image class="common-item-icon" src="{{$item.cover}}"></image>
+              <div class="common-item-top-right-container">
+                <div class="common-item-top-right-title-container">
+                  <text class="common-item-name">{{$item.name}}</text>
+                  <text class="common-item-score">{{$item.score + '分'}}</text>
+                </div>
+                <text class="common-item-brief">{{$item.brief}}</text>
+                <div class="common-item-placeholder">
+                </div>
+                <div class="common-item-bottom-container">
+                  <text class="common-item-author">{{$item.author}}</text>
+                  <text class="common-item-cateogry">{{$item.category_name}}</text>
+                </div>
+              </div>
+
+            </div>
+          </list-item>
+        </block>
+
+        <list-item type="loadStatus" class="load-status">
+          <progress type="circular" show="{{ hasMoreData }}"></progress>
+          <text show="{{ hasMoreData }}">加载中...</text>
+          <text show="{{ hasMoreData==false }}">没有更多了~</text>
+        </list-item>
+
+      </list>
+    </refresh>
+  </div>
+</template>
+
+
+<style>
+@import "../../../Market/index.css";
+
+.doc-page {
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.seriaType-div {
+  height: 60px;
+  width: 100%;
+  background-color: #ffffff;
+  flex-direction: row;
+  justify-content: flex-start;
+}
+.seriaType-div-txt {
+  font-size: 28px;
+  color: #ff0000;
+  height: 60px;
+  width: 160px;
+  text-align: center;
+}
+.seriaType-div-txt-no {
+  font-size: 28px;
+  color: #000000;
+  height: 60px;
+  width: 160px;
+  text-align: center;
+}
+
+.list {
+  height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 30px;
+  padding-right: 30px;
+}
+.list .content-item {
+  width: 100%;
+}
+.list .content-item .img {
+  flex-shrink: 0;
+  width: 192px;
+  height: 270px;
+  padding: 10px 0;
+  border-radius: 6px;
+}
+
+.list .content-item .text-wrap {
+  flex-direction: column;
+  flex-grow: 1;
+  height: 270px;
+  padding-left: 32px;
+  justify-content: center;
+}
+.list .content-item .text-wrap .top-line {
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: space-around;
+}
+.list .content-item .text-wrap .top-line .text-title {
+  lines: 2;
+  text-overflow: ellipsis;
+  font-size: 35px;
+  color: #000000;
+}
+
+.list .content-item .text-wrap .top-line .text-name {
+  text-overflow: ellipsis;
+  color: #ff6000;
+  justify-content: space-between;
+}
+.list .content-item .text-wrap .top-line .text-name .author {
+  color: #bebebe;
+  font-size: 30px;
+}
+
+.bookshelf {
+  width: 165px;
+  height: 40px;
+  font-size: 26px;
+  text-align: center;
+  border-radius: 20px;
+  color: #ff7200;
+  border-width: 4px;
+  border-color: #ff7200;
+}
+
+.list .content-item .text-wrap .top-line .text-desc {
+  lines: 2;
+  text-overflow: ellipsis;
+  font-size: 30px;
+  line-height: 45px;
+  color: #bebebe;
+}
+.load-status {
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
+
+<script>
+import prompt from '@system.prompt'
+import router from '@system.router'
+import fetch from '@system.fetch'
+import storage from '@system.storage'
+import device from '@system.device'
+
+import { iconCompleteListApi, iconSerialieListApi, iconShortArticleListApi } from '../../../Common/api/api.js'
+
+export default {
+  props: ['iconType', 'sex'],
+  data: {
+    list: [],
+    pageStart: 0,
+    pageSize: 10,
+    getDt: false,
+    hasMoreData: true,
+    isRefreshing: false,
+    isSeria: false,
+    seriaByTime: true,
+    seriaByPopular: false,
+    requestSex:1,
+  },
+
+  onInit() {
+    if (Number(this.sex) === 1){
+      this.requestSex = 1
+    }
+    if (Number(this.sex) === 2){
+      this.requestSex = 2
+    }
+    if (Number(this.sex) === 3){
+      this.requestSex = 4
+    }
+
+    this.isSeria = this.iconType === 'serialization' ? true : false
+    if (this.isSeria) {
+      this.getSeriaData(2, 2)//非刷新2
+    } else {
+
+      if (this.iconType === 'complete') {
+        this.getCompleteData(1)
+      }
+      if (this.iconType === 'shortstory') {
+        this.getShortData(1)
+      }
+
+    }
+  },
+
+  toSearch() {
+    router.push({
+      uri: 'Search'
+    })
+  },
+
+  //push详情页
+  toDetail(id) {
+    router.push({
+      uri: 'BookDetail',
+      params: {
+        bookId: id,
+      }
+    })
+  },
+
+  scrollbottomList() {
+    this.pageStart += this.pageSize
+    if (this.isSeria) {
+      if (this.seriaByPopular == true) {
+        this.getSeriaData(1, 2)//非刷新2
+      }
+      if (this.seriaByTime == true) {
+        this.getSeriaData(2, 2)
+      }
+    } else {
+
+      if (this.iconType === 'complete') {
+        this.getCompleteData(1)
+      }
+      if (this.iconType === 'shortstory') {
+        this.getShortData(1)
+      }
+
+    }
+  },
+
+  getCompleteData(type) {
+    iconCompleteListApi(this.requestSex, this.pageSize, this.pageStart)
+      .then((ret) => {
+        if (type === 2) {
+          this.list = []
+        }
+        this.isRefreshing = false
+        this.hasMoreData = ret.hasMore
+        this.list = this.list.concat(ret.list)
+      })
+      .catch((error) => {
+        this.isRefreshing = false
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  getSeriaData(type, refresh) {
+    iconSerialieListApi(this.requestSex, type, this.pageSize, this.pageStart)
+      .then((ret) => {
+        if (refresh === 1) {
+          this.list = []
+        }
+        this.isRefreshing = false
+        this.hasMoreData = ret.hasMore
+        this.list = this.list.concat(ret.list)
+      })
+      .catch((error) => {
+        this.isRefreshing = false
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  getShortData(type) {
+    iconShortArticleListApi(this.requestSex, this.pageSize, this.pageStart)
+      .then((ret) => {
+        if (type === 2) {
+          this.list = []
+        }
+        this.isRefreshing = false
+        this.hasMoreData = ret.hasMore
+        this.list = this.list.concat(ret.list)
+      })
+      .catch((error) => {
+        this.isRefreshing = false
+        prompt.showToast({
+          message: '网络连接失败，请检查网络',
+        })
+      })
+  },
+
+  refresh(e) {
+    this.isRefreshing = e.refreshing
+    this.pageStart = 0
+
+    if (this.isSeria) {
+
+      if (this.seriaByPopular == true) {
+        this.getSeriaData(1, 1)//刷新1
+      }
+      if (this.seriaByTime == true) {
+        this.getSeriaData(2, 1)
+      }
+
+    } else {
+
+      if (this.iconType === 'complete') {
+        this.getCompleteData(2)
+      }
+      if (this.iconType === 'shortstory') {
+        this.getShortData(2)
+      }
+
+    }
+
+  },
+
+  changeSeriaType(type) {
+    this.list = []
+    if (type === 1) {
+      this.seriaByTime = false
+      this.seriaByPopular = true
+    } else {
+      this.seriaByTime = true
+      this.seriaByPopular = false
+    }
+    this.getSeriaData(type, 1)
+  },
+}
+</script>
+

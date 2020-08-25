@@ -1,0 +1,149 @@
+<!-- 完本||连载||短篇 tab --index 0：男频 1：女频  2：图书 -->
+<import name="MultiplexingPage" src="./Multiplex/index.ux"></import>
+
+<template>
+  <div class="serialie-page">
+
+    <div class="flexible-tabbar">
+      <div style="width:100px">
+        <image class="title-item-left-image" src="../../Common/images/arrow-left-0.png" onclick="back"></image>
+      </div>
+      <div for="{{(index,item) in tabItems}}" class="tab-item" onclick="clickTabBar(index)">
+        <text class="{{currentIndex === index ? 'active' : 'tab-text'}}">{{item.text}}</text>
+      </div>
+      <div style="width:100px"></div>
+    </div>
+
+    <tabs class="tabs" onchange="changeTabactive" index="{{currentIndex}}">
+      <tab-content class="tab-content">
+        <div class="item-container">
+          <!-- 男 -->
+          <MultiplexingPage sex="1" icon-type="{{iconType}}"></MultiplexingPage>
+        </div>
+        <div class="item-container">
+          <!-- 女 -->
+          <MultiplexingPage sex="2" icon-type="{{iconType}}"></MultiplexingPage>
+        </div>
+        <div class="item-container">
+          <!-- 图书 -->
+          <MultiplexingPage sex="3" icon-type="{{iconType}}"></MultiplexingPage>
+        </div>
+      </tab-content>
+    </tabs>
+
+  </div>
+</template>
+
+<style>
+.serialie-page {
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.tabs {
+  display: flex;
+  flex: 1;
+  background-color: #ffffff;
+}
+.tab-content {
+  flex: 1;
+}
+.item-container {
+  flex-direction: column;
+}
+.flexible-tabbar {
+  display: flex;
+  height: 70px;
+  border-bottom-color: #eeeeee;
+  border-bottom-width: 1px;
+  flex-direction: row;
+}
+.title-item-left-image {
+  width: 50px;
+  height: 50px;
+  margin-left: 25px;
+  align-self: center;
+}
+.tab-item {
+  flex: 1;
+  width: 100px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.tab-item .tab-text {
+  font-size: 32px;
+  color: #939aa2;
+  text-align: center;
+}
+.tab-item .active {
+  font-size: 32px;
+  color: #f85836;
+}
+</style>
+
+<script>
+import prompt from '@system.prompt'
+import router from '@system.router'
+import fetch from '@system.fetch'
+import storage from '@system.storage'
+import share from '@system.share'
+import device from '@system.device'
+
+export default {
+
+  private: {
+    currentIndex: 0,
+    tabItems: [
+      {
+        text: '男频',
+        show: false
+      },
+      {
+        text: '女频',
+        show: false
+      },
+      {
+        text: '图书',
+        show: false
+      }
+    ],
+  },
+
+  protected: {
+    sex: 1,
+    iconType: 'complete',
+  },
+
+  onInit() {
+
+    if (Number(this.sex) === 1) {
+      this.changeCurrent(0)
+    }
+    if (Number(this.sex) === 2) {
+      this.changeCurrent(1)
+    }
+    if (Number(this.sex) === 3) {
+      this.changeCurrent(2)
+    }
+  },
+
+
+  changeTabactive(e) {
+    // 切换tab
+    console.info('切换tab: ' + e.index)
+    this.changeCurrent(e.index)
+  },
+  clickTabBar(index) {
+    this.changeCurrent(index)
+  },
+  changeCurrent(index) {
+    this.tabItems[index].show = true
+    this.currentIndex = index
+  },
+  back() {
+    router.back()
+  },
+}
+</script>

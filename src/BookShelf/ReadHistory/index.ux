@@ -1,0 +1,374 @@
+<import name="titleBar" src="../../Common/titleBar"></import>
+
+<template>
+  <div class="history-page">
+
+    <titleBar title="{{titleName}}" onleft-button-clicked="backToShelf" left-button="../../Common/images/arrow-left-0.png" right-Text="{{clean}}" onright-button-clicked="cleanHistory"></titleBar>
+    <list class="browse-list" style="color:{{color}}">
+      <list-item type="listItem" class="list-item item-color" for="{{get_book_browse_arr}}" onclick="toNovelContent($item.id,$item.cover,$item.name,$item.cid)" onlongpress="showDel()">
+
+        <image class="image-item" src="{{$item.cover}}"></image>
+        <div class="text-item">
+          <text class="txt text-top">{{ $item.name }}</text>
+          <text class="txt text-center">读至：{{ $item.chapterName }}</text>
+        </div>
+
+        <div class="del-item" onclick="delHistory($item.id,evt)" style="{{ styleText }}">
+          <image class="del-icon" src="../../Common/images/del-icon.png"></image>
+        </div>
+
+      </list-item>
+    </list>
+
+    <div class="no-browse-div" show="{{showNoBrowseTxt}}">
+      <text class="no-browse-txt">暂无记录，去书城看看吧</text>
+    </div>
+
+  </div>
+</template>
+
+
+<style>
+.history-page {
+  flex: 1;
+  flex-direction: column;
+  background-color: #ffffff;
+}
+
+.book-list .list-item .txt {
+  font-size: 30px;
+  line-height: 45px;
+  text-align: left;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.browse-list {
+  flex-wrap: wrap;
+  flex: 1;
+  height: 100%;
+  margin-top: 21px;
+  margin-left: 31px;
+  margin-right: 31px;
+}
+
+.browse-list .list-item {
+  margin-top: 10px;
+  padding-bottom: 10px;
+  text-align: center;
+  flex-direction: row;
+  border-bottom-width: 1px;
+  border-bottom-color: #e4e4e4;
+}
+
+.browse-list .list-item .text-item {
+  margin-left: 25px;
+  flex-direction: column;
+  width: 420px;
+}
+
+.browse-list .list-item .text-item .text-top {
+  lines: 1;
+  text-overflow: ellipsis;
+  height: 105px;
+  padding-top: 60px;
+  text-align: left;
+  color: #1b1b1b;
+  font-size: 35px;
+  font-weight: bold;
+}
+
+.browse-list .list-item .text-item .text-center {
+  lines: 1;
+  text-overflow: ellipsis;
+  height: 70px;
+  line-height: 45px;
+  padding-top: 20px;
+  font-size: 30px;
+  justify-content: space-between;
+  color: #9d9d9d;
+}
+
+.browse-list .list-item .text-item .text-bottom {
+  height: 45px;
+  font-size: 24px;
+  color: #9d9d9d;
+}
+
+.browse-list .list-item .del-item {
+  width: 75px;
+  height: 175px;
+  margin-top: 25px;
+  margin-bottom: 25px;
+  text-align: center;
+  padding-top: 75px;
+  padding-left: 30px;
+  border-left-width: 1px;
+  border-left-color: #e4e4e4;
+}
+
+.browse-list .list-item .del-item .del-icon {
+  width: 50px;
+  height: 50px;
+}
+
+.browse-list .list-item .image-item {
+  width: 168px;
+  height: 224px;
+  border-color: #f4f4f4;
+  border-radius: 6px;
+}
+.no-browse-div {
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-browse-txt {
+  height: 50px;
+  text-align: center;
+  font-size: 35px;
+  color: #acacb9;
+}
+</style>
+
+<script>
+
+import router from '@system.router'
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+import { bookLatelyReadApi } from '../../Common/api/api.js'
+
+export default {
+
+  data: {
+    token: '',
+    hadLogin: false,
+    bookShelfList: [],
+    haveAdded: false,
+    bookId: '',
+    titleName: '阅读记录',
+    clean: '清除',
+    get_book_browse_arr: [], //获取浏览缓存章节对象数组
+    styleText: 'display: none',
+    showNoBrowseTxt: false,
+    browseNum: 0
+  },
+
+  onInit() {
+    this.token = this.$app.$def.token
+    this.hadLogin = this.$app.$def.hadLogin
+    this.getBrowseCacheArr() //页面初始化获取浏览记录缓存数据
+  },
+
+  //获取已加入书架数据
+  getHadAddedBookList(bookId) {
+    this.bookShelfList = this.$app.$def.bookShelfList
+    for (let i = 0; i < this.bookShelfList.length; i++) {
+      if (this.bookShelfList[i].id == bookId) {
+        this.haveAdded = true
+        break
+      }
+    }
+  },
+
+  onShow() {
+    this.getBrowseCacheArr()
+  },
+
+  backToShelf() {
+    router.back()
+  },
+
+  toNovelContent(id, cover, name, cid) {
+
+    this.styleText = 'display:none'
+    $umeng_stat.trackEvent('bookshelf_open_book_clicked', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    //浏览记录跳转到具体上次浏览章节内容页 或者从书架直接跳到第一章节
+    this.getHadAddedBookList(id)
+
+    if (this.haveAdded) {
+      //如果已经加入书架 需要做排序处理
+      this.bookId = id
+      let targetObject = {}
+      //将最后阅读的放第一个  分未登录和已登录两种情况
+      if (!this.hadLogin) {
+
+        this.pushToNovelContentPage(id, cover, name)
+
+        console.log('未登录状态 -- 详情页书架数据 this.bookShelfList ==', this.bookShelfList)
+        console.log('-- 阅读记录页this.bookId == ', this.bookId)
+        for (let i = 0; i < this.bookShelfList.length; i++) {
+          if (Number(this.bookShelfList[i].id) === Number(this.bookId)) {
+            targetObject = this.bookShelfList[i]
+            console.log('-- 阅读记录页找到了该书 this.bookId == ', this.bookId)
+            this.bookShelfList.splice(i, 1) // 如果数据组存在该元素，则把该元素删除
+            break
+          }
+        }
+        if (Object.keys(targetObject).length > 0) {
+          this.bookShelfList.unshift(targetObject) // 再添加到第一个位置
+        }
+        console.log('未登录排好顺序的数组 -- this.bookList', this.bookShelfList)
+        storage.set({
+          key: 'bookShelfCache',
+          value: this.bookShelfList,
+          success: data => {
+            this.$app.$def.bookShelfList = this.bookShelfList
+            this.updateBookshelfList()
+          },
+          fail: (data, code) => {
+            console.log('未登录保存书架顺序 error=', code)
+          }
+        })
+      }
+
+
+      if (this.hadLogin) {
+
+        console.log('已登录状态 -- 阅读记录页点击去看书')
+        let postData = {
+          'token': this.$app.$def.token,
+          'book_id': this.bookId,
+          'chapter_id': 0,
+          'chapter_sort': 0
+        }
+        bookLatelyReadApi(postData)
+          .then((ret) => {
+            console.log('阅读记录页点击去看书 -- 已登录状态 --   add ret', ret)
+            if (ret.status == 200) {
+
+              for (let i = 0; i < this.bookShelfList.length; i++) {
+                if (Number(this.bookShelfList[i].id) === Number(this.bookId)) {
+                  targetObject = this.bookShelfList[i]
+                  this.bookShelfList.splice(i, 1) // 如果数据组存在该元素，则把该元素删除
+                  break
+                }
+              }
+              if (Object.keys(targetObject).length > 0) {
+                this.bookShelfList.unshift(targetObject) // 再添加到第一个位置
+              }
+              this.pushToNovelContentPage(id, cover, name)
+              this.updateBookshelfList()
+
+            } else {
+              //其他情况不做处理
+              this.pushToNovelContentPage(id, cover, name)
+            }
+
+          })
+          .catch((error) => {
+            console.log('bookLatelyReadApi error=', error)
+            this.pushToNovelContentPage(id, cover, name)
+          })
+      }
+
+
+    } else {
+
+      this.pushToNovelContentPage(id, cover, name)
+    }
+
+
+
+  },
+  updateBookshelfList() {
+    this.$app.$def.bookShelfList = this.bookShelfList
+    let addBookToShelfSuccessChannel = new BroadcastChannel('addBookToShelfSuccess')
+    addBookToShelfSuccessChannel.postMessage('addBookToShelfSuccess')
+  },
+
+  pushToNovelContentPage(id, cover, name) {
+    router.push({
+      uri: '/NovelContent',
+      params: {
+        bookId: id,
+        picUrl: cover,
+        bookName: name,
+      }
+    })
+  },
+
+  delHistory(id, evt) {
+    console.log(`history evt = ---------`, evt)
+    // 阻止事件冒泡
+    evt.stopPropagation()
+    const self = this
+    //删除某条浏览记录
+    this.get_book_browse_arr.splice(this.get_book_browse_arr.findIndex(item => item.id === id), 1)
+    this.browseNum = this.get_book_browse_arr.length
+    storage.set({
+      //删除某条浏览记录，相应的缓存中也要删除对应记录，并重新设置缓存
+      key: 'D',
+      value: this.get_book_browse_arr,
+      success: function (data) {
+        if (self.browseNum > 0) {
+          self.showNoBrowseTxt = false
+        } else {
+          self.showNoBrowseTxt = true
+        }
+      },
+      fail: function (data, code) {
+        console.log(`阅读记录页设置 新的记录 ‘D’ set handling fail, code = ${code}`)
+      }
+    })
+
+  },
+
+  cleanHistory() {
+    const self = this
+    storage.delete({
+      key: 'D',
+      success: function (data) {
+        self.get_book_browse_arr = []
+        self.showNoBrowseTxt = true
+      },
+      fail: function (data, code) {
+        console.log(`handling fail, code = ${code}`)
+        prompt.showToast({
+          message: '清除失败，请重试',
+          duration: 1
+        })
+      }
+    })
+  },
+
+  getBrowseCacheArr() {
+    const self = this
+    //获取浏览记录缓存数组
+    storage.get({
+      key: 'D',
+      success: data => {
+        if (data != '' && data != '[]' && data != null) {
+          self.get_book_browse_arr = self.get_book_browse_arr.concat(JSON.parse(data)).reverse()
+          self.get_book_browse_arr = self.arrayObjectDeleteRepeat(self.get_book_browse_arr)
+          self.browseNum = self.get_book_browse_arr.length
+          if (self.browseNum > 0) {
+            self.showNoBrowseTxt = false
+          } else {
+            self.showNoBrowseTxt = true
+          }
+        } else {
+          self.showNoBrowseTxt = true
+        }
+      },
+      fail: function (data, code) {
+        console.log(`获取阅读记录 get 'D' handling fail, code = ${code}`)
+        self.showNoBrowseTxt = true
+      }
+    })
+  },
+  arrayObjectDeleteRepeat(objarray) {
+    const res = new Map()
+    return objarray.filter(a => !res.has(a.id) && res.set(a.id, 1))
+  },
+
+
+  showDel() {
+    this.styleText = 'display:flex'
+  },
+
+}
+</script>
+

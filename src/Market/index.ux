@@ -1,0 +1,370 @@
+<!-- 书城tab --sex 3：精选 1：男频 2：女频  4：图书 5：VIP-->
+<!-- 书城tab --index 0：精选 1：男频 2：女频  3：图书 4：VIP-->
+<import name="MultiplexingPage" src="../Market/Multiplex/index.ux"></import>
+<import name="VIPPage" src="../Market/VIP/index.ux"></import>
+
+<template>
+  <div class="market-page">
+    <div class="title-wrap">
+      <text class="title-text" onclick="toBookCity">书城</text>
+      <div class="search-wrap" onclick="toSearch">
+        <image class="icon-search" src="../Common/images/search.png"></image>
+        <text class="input-wrap"></text>
+      </div>
+    </div>
+
+    <div class="flexible-tabbar">
+      <div for="{{(index,item) in tabItems}}" class="tab-item" onclick="clickTabBar(index)">
+        <text class=" {{currentIndex === index ? 'active' : 'tab-text'}}">{{item.text}}</text>
+      </div>
+    </div>
+    <tabs class="tabs" onchange="changeTabactive" index="{{currentIndex}}">
+      <tab-content class="tab-content">
+        <div class="item-container">
+          <!-- 精选 -->
+          <MultiplexingPage sex="3" if="{{tabItems[0].show}}"></MultiplexingPage>
+        </div>
+        <div class="item-container">
+          <!-- 男频 -->
+          <MultiplexingPage sex="1" if="{{tabItems[1].show}}"></MultiplexingPage>
+        </div>
+        <div class="item-container">
+          <!-- 女频 -->
+          <MultiplexingPage sex="2" if="{{tabItems[2].show}}"></MultiplexingPage>
+        </div>
+        <div class="item-container">
+          <!-- 图书 -->
+          <MultiplexingPage sex="4" if="{{tabItems[3].show}}"></MultiplexingPage>
+        </div>
+        <div class="item-container">
+          <!-- VIP  比较特殊  暂时单写 -->
+          <!-- <MultiplexingPage sex="5"></MultiplexingPage> -->
+          <VIPPage if="{{tabItems[4].show}}"></VIPPage>
+        </div>
+      </tab-content>
+    </tabs>
+
+    <div class="samllbuoy-div" if="{{showSmallBuoy}}">
+      <stack>
+        <image class="samllbuoy-image" src="{{smallBuoyInfo.image}}" onclick="clickSmallBuoy"></image>
+        <image class="samllbuoy-remove-image" src="../Common/images/close.png" onclick="removeSmallBuoy"></image>
+      </stack>
+    </div>
+
+    <!-- 活动弹窗 -->
+    <div class="activity-view" if="{{showActivity}}" onclick="removeActivity">
+      <image class="activity-image" src="{{activityInfo.image}}" onclick="clickActivity"></image>
+    </div>
+
+  </div>
+</template>
+<style>
+.market-page {
+  flex-direction: column;
+  background-color: #ffffff;
+}
+.title-wrap {
+  height: 100px;
+  padding-left: 32px;
+  align-items: center;
+}
+.title-text {
+  font-size: 40px;
+  color: #1e252f;
+}
+.search-wrap {
+  flex: 1;
+  margin-left: 36px;
+  margin-right: 60px;
+  height: 60px;
+  background-color: #f1f1f6;
+  border-radius: 30px;
+  align-items: center;
+}
+.icon-search {
+  width: 28px;
+  height: 28px;
+  margin-left: 32px;
+}
+.info {
+  margin-left: 10px;
+  margin-right: 10px;
+  width: 60px;
+  height: 60px;
+  align-items: center;
+  justify-content: center;
+}
+.icon-info {
+  width: 31px;
+  height: 31px;
+}
+.input-wrap {
+  margin-left: 20px;
+  margin-right: 32px;
+  flex: 1;
+}
+.icon-normal {
+  margin-left: 10px;
+  width: 35px;
+}
+.input-text {
+  width: 697px;
+  height: 66px;
+  line-height: 66px;
+  margin-left: 25px;
+  margin-right: 28px;
+  font-size: 31px;
+  background-color: #dadada;
+  color: #040404;
+}
+.tabs {
+  display: flex;
+  flex: 1;
+  background-color: #ffffff;
+}
+.tab-content {
+  flex: 1;
+}
+.item-container {
+  flex-direction: column;
+}
+.flexible-tabbar {
+  display: flex;
+  border-bottom-color: #eeeeee;
+  border-bottom-width: 1px;
+}
+.tab-item {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.tab-item .tab-text {
+  font-size: 32px;
+  color: #939aa2;
+}
+.tab-item .active {
+  font-size: 32px;
+  color: #f85836;
+}
+
+.samllbuoy-div {
+  position: absolute;
+  height: 120px;
+  width: 120px;
+  bottom: 150px;
+  right: 15px;
+}
+.samllbuoy-image {
+  height: 100%;
+  width: 100%;
+}
+.samllbuoy-remove-image {
+  height: 30px;
+  width: 30px;
+  transform: translate(80px, 10px);
+}
+
+.activity-view {
+  display: flex;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(129, 127, 127, 0.2);
+  align-items: center;
+  justify-content: center;
+}
+.activity-image {
+  flex-direction: column;
+  height: 550px;
+  width: 550px;
+  justify-content: center;
+  align-self: center;
+}
+</style>
+<script>
+import { smallbuoyApi, activityPopupApi } from '../Common/api/api.js'
+
+import prompt from '@system.prompt'
+import router from '@system.router'
+import fetch from '@system.fetch'
+import storage from '@system.storage'
+import share from '@system.share'
+import device from '@system.device'
+import clipboard from '@system.clipboard'
+
+export default {
+  data: {
+    token: '',
+    smallBuoyInfo: {},
+    showSmallBuoy: false,
+    showActivity: false,
+    activityInfo: {},//活动弹窗信息
+    placeholder: '',
+    currentIndex: 0,
+    tabItems: [
+      {
+        text: '精选',
+        show: true
+      },
+      {
+        text: '男频',
+        show: false
+      },
+      {
+        text: '女频',
+        show: false
+      },
+      {
+        text: '图书',
+        show: false
+      },
+      {
+        text: 'VIP',
+        show: false
+      }
+    ]
+  },
+  onInit() {
+    this.getSmallbuoyInfo()
+    this.getActivityPopupInfo() //获取活动弹窗配置
+
+    const self = this
+    let changeToVipChannel = new BroadcastChannel('changeToVipChannel')
+    changeToVipChannel.onmessage = function (e) {
+      if (e.data == 'changeToVipChannel') {
+        self.changeCurrent(4)
+      }
+    }
+  },
+
+  //small buoy 
+  getSmallbuoyInfo() {
+
+    let postData = { 'token': this.$app.$def.token.length > 6 ? this.$app.$def.token : '' }
+    if (this.$app.$def.userInfo.sex != undefined) {
+      this.getSmallBuoyFromApi(this.$app.$def.userInfo.sex, 1, postData)
+    } else {
+      this.getSmallBuoyFromApi(3, 1, postData)
+    }
+  },
+  getSmallBuoyFromApi(sex, position, postData) {
+    smallbuoyApi(sex, position, postData)
+      .then((ret) => {
+        if (Object.keys(ret).length > 0) { //判断对象非空 JSON.stringify(ret) != '{}'
+          this.smallBuoyInfo = ret
+          this.showSmallBuoy = true
+        }
+      })
+      .catch((error) => {
+        console.log('book city small buoy api error=', error)
+      })
+  },
+  clickSmallBuoy() {
+    $umeng_stat.trackEvent('small-buoy_user_click',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    this.showActivity = false
+    if (this.smallBuoyInfo.type === 1) {
+      this.goToDetail(this.smallBuoyInfo.url)//url后台兼容 bookId和url 
+    }
+    if (this.smallBuoyInfo.type === 2) {
+      this.goToWebview(this.smallBuoyInfo.url)
+    }
+
+    //测试...
+    if (this.smallBuoyInfo.type === 8) {
+      this.goToWebview(this.smallBuoyInfo.url)
+    }
+
+  },
+  goToDetail(bookId) {
+    router.push({
+      uri: 'BookDetail',
+      params: {
+        bookId: bookId,
+      }
+    })
+  },
+  goToWebview(url) {
+    router.push({
+      uri: 'WebView',
+      params: {
+        url: url,
+      }
+    })
+  },
+  removeSmallBuoy() {
+    $umeng_stat.trackEvent('small-buoy_user_remove',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    this.showSmallBuoy = false
+    this.smallBuoyInfo = {}
+  },
+
+  changeTabactive(e) {
+    // 切换tab
+    this.changeCurrent(e.index)
+    switch (e.index) {
+      case 0:
+        $umeng_stat.trackEvent('market_quality_tab_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+        break
+      case 1:
+        $umeng_stat.trackEvent('market_male_tab_clicked',{user_imei: this.$app.$def.IMEI,user_deviceid : this.$app.$def.DeviceId})
+        break
+      case 2:
+        $umeng_stat.trackEvent('market_female_tab_clicked',{user_imei: this.$app.$def.IMEI,user_deviceid : this.$app.$def.DeviceId})
+        break
+      case 3:
+        $umeng_stat.trackEvent('market_tushu_tab_clicked',{user_imei: this.$app.$def.IMEI,user_deviceid : this.$app.$def.DeviceId})
+        break
+      case 4:
+        $umeng_stat.trackEvent('market_vip_tab_clicked',{user_imei: this.$app.$def.IMEI,user_deviceid : this.$app.$def.DeviceId})
+        break
+    }
+  },
+  toSearch() {
+    $umeng_stat.trackEvent('market_search_clicked',{user_imei: this.$app.$def.IMEI,user_deviceid : this.$app.$def.DeviceId})
+    router.push({
+      uri: 'Search'
+    })
+  },
+  clickTabBar(index) {
+    this.changeCurrent(index)
+  },
+  changeCurrent(index) {
+    this.tabItems[index].show = true
+    this.currentIndex = index
+  },
+
+  //获取活动弹窗配置
+  getActivityPopupInfo(token) {
+    let postData = { 'token': this.$app.$def.token.length > 6 ? this.$app.$def.token : '' }//this.$app.$def.token == 1??? 
+    activityPopupApi(postData)
+      .then((ret) => {
+        if (ret.length > 0) {
+          this.activityInfo = ret[0]
+          this.showActivity = true
+        }
+      })
+      .catch((error) => {
+        console.log('activity popup api error=', error)
+      })
+  },
+
+  //活动弹窗
+  clickActivity() {
+    $umeng_stat.trackEvent('activity-popup_user_click',{user_imei: this.$app.$def.IMEI,user_deviceid : this.$app.$def.DeviceId})
+    this.showActivity = false
+    if (this.activityInfo.type === 1) {
+      this.goToDetail(this.activityInfo.url)//jump_url后台兼容 bookId和url 
+    }
+    if (this.activityInfo.type === 2) {
+      this.goToWebview(this.activityInfo.url)
+    }
+  },
+  removeActivity() {
+    $umeng_stat.trackEvent('activity-popup_user_remove',{user_imei: this.$app.$def.IMEI,user_deviceid : this.$app.$def.DeviceId})
+    this.activityInfo = {}
+    this.showActivity = false
+  },
+
+}
+</script>

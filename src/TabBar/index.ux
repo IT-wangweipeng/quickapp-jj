@@ -1,0 +1,545 @@
+<!-- 总tab控制 -- 1：书城 2：爽文 3：分类  4：书架 5:我的-->
+
+<import name="BookStorePage" src="../Market/index.ux"></import>
+<import name="ShortEssayPage" src="../ShortEssay/index.ux"></import> 
+<import name="ClassifyPage" src="../Category/index.ux"></import>
+<import name="BookshelfPage" src="../BookShelf/index.ux"></import>
+<import name="MinePage" src="../Mine/index.ux"></import>
+
+<template>
+  <stack class="tabbar-total">
+
+    <div class="flexible-tabs">
+      <tabs onchange="changeTabbarActive" index="{{currentIndex}}">
+        <tab-content class="flexible-tab-content" scrollable="false">
+          <div class="tab-content-section">
+            <BookStorePage if="{{tabItems[0].show}}"></BookStorePage>
+          </div>
+          <div class="tab-content-section">
+            <ShortEssayPage if="{{tabItems[1].show}}"></ShortEssayPage>
+          </div>
+          <div class="tab-content-section">
+            <ClassifyPage if="{{tabItems[2].show}}"></ClassifyPage>
+          </div>
+          <div class="tab-content-section">
+            <BookshelfPage if="{{tabItems[3].show}}"></BookshelfPage>
+          </div>
+          <div class="tab-content-section">
+            <MinePage if="{{tabItems[4].show}}"></MinePage>
+          </div>
+
+        </tab-content>
+      </tabs>
+
+      <div class="flexible-tabbar">
+        <div for="{{(index,item) in tabItems}}" class="tab-item" onclick="clickTabBar(index)">
+          <image class="tab-icon" src="{{item.iconImage[currentIndex === index ? 1 : 0]}}"></image>
+          <text class="{{currentIndex === index ? 'active' : 'tab-text'}}">{{item.text}}</text>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="shortcut-div" onclick="addShortcut()" if="{{showAddShortcut}}">
+      <text class="shortcut-txt">{{shortcutTxt}}</text>
+    </div>
+
+  </stack>
+</template>
+
+<style>
+.tabbar-total .flexible-tabs {
+  display: flex;
+  flex-direction: column;
+}
+.flexible-tabs .flexible-tabbar {
+  display: flex;
+  border-top-color: #eeeeee;
+  border-top-width: 1px;
+}
+.flexible-tabbar .tab-item {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  font-size: 12px;
+}
+.tab-item .tab-icon {
+  width: 56px;
+  height: 56px;
+  padding: 5px;
+}
+.tab-item .tab-text {
+  font-size: 20px;
+  color: #aaaaaa;
+}
+.tab-item .active {
+  font-size: 20px;
+  color: #000000;
+}
+
+.shortcut-div {
+  position: fixed;
+  flex-direction: column;
+  justify-content: center;
+  height: 90px;
+  width: 600px;
+  border-radius: 50px;
+  background-color: #f85836;
+  align-items: center;
+  bottom: 120px;
+  left: 75px;
+}
+
+.shortcut-txt {
+  text-align: center;
+  font-size: 35px;
+  color: #ffffff;
+}
+</style>
+
+<script>
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+import shortcut from '@system.shortcut'
+
+import { userLoginOutApi, getUserInfoApi, userAutomaticLoginApi, getUserTotalCompleteApi, bookFavoritesInfoApi, bookFavoritesSyncApi, bookShelfRecommendApi } from '../Common/api/api.js'
+
+export default {
+
+  public: {
+    showAddShortcut: false,
+    shortcutTxt: '添加到桌面，畅读品质小说',
+    currentIndex: 0,
+    tabItems: [
+      {
+        text: '书城',
+        iconImage: ['../Common/images/bookstore_default.png', '../Common/images/bookstore_highlight.png'],
+        show: true
+      },
+      {
+        text: '爽文',
+        iconImage: ['../Common/images/shortEassy_default.png', '../Common/images/shortEassy_highlight.png'],
+        show: false
+      },
+      {
+        text: '分类',
+        iconImage: ['../Common/images/classify_default.png', '../Common/images/classify_highlight.png'],
+        show: false
+      },
+      {
+        text: '书架',
+        iconImage: ['../Common/images/bookshelf_default.png', '../Common/images/bookshelf_highlight.png'],
+        show: true
+      },
+      {
+        text: '我的',
+        iconImage: ['../Common/images/image_mine_default.png', '../Common/images/image_mine_highlight.png'],
+        show: false
+      }
+    ],
+  },
+
+  onInit() {
+    shortcut.systemPromptEnabled = false
+    const self = this
+    storage.get({
+      key: 'userLoginToken',
+      success: data => {
+        if ((data != '') && (data != undefined)) {
+          this.$app.$def.token = data
+        }
+      },
+      fail: function (data, code) {
+        console.log(`handling fail, code = ${code}`)
+      }
+    })
+
+    shortcut.hasInstalled({
+      success: function (data) {
+        if (data == true) {
+          self.showAddShortcut = false
+          self.$app.$def.showAddShortcut = false
+        } else {
+          self.showAddShortcut = true
+          self.$app.$def.showAddShortcut = true
+        }
+      }
+    })
+
+    //自动登录
+    this.startUpAutoLoginAction()
+
+    let autoLoginChannel = new BroadcastChannel('autoLogin')
+    autoLoginChannel.onmessage = function (e) {
+      if (e.data == 'autoLogin') {
+        self.doAutoLoginAction()
+      }
+    }
+
+    // 用户登录监听
+    let userLoginInSuccessChannel = new BroadcastChannel('userLoginInSuccess')
+    userLoginInSuccessChannel.onmessage = function (e) {
+      if (e.data == 'userLoginInSuccess') {
+        self.getBookshelf()
+      }
+    }
+    // 用户登出监听
+    let userLoginOutSuccessChannel = new BroadcastChannel('userLoginOutSuccess')
+    userLoginOutSuccessChannel.onmessage = function (e) {
+      if (e.data == 'userLoginOutSuccess') {
+        self.getBookshelf()
+      }
+    }
+
+
+    let addBookChannel = new BroadcastChannel('toBookCityAddBook')
+    addBookChannel.onmessage = function (e) {
+      if (e.data == 'toBookCityAddNewBook')
+        self.changeCurrent(0)
+    }
+
+    //用户首次登录选择性别时跳过
+    let skipSexSetChannel = new BroadcastChannel('userSkipSexSetChannel')
+    skipSexSetChannel.onmessage = function (e) {
+      if (e.data == 'userSkipSexSetChannel') {
+        self.changeCurrent(0)
+      }
+    }
+
+    storage.get({  //保存限制广告次数的初始时间
+      key: 'hadSetOldDate',
+      success: data => {
+
+        if ((data == '') || (data == undefined)) {
+          //获取当日日期并保存  以备广告次数限制
+          let myDate = new Date()    //获取当前年份(2位)
+          let year = myDate.getFullYear()    //获取完整的年份(4位,1970-????)
+          let month = myDate.getMonth()      //获取当前月份(0-11,0代表1月)
+          let day = myDate.getDate()      //获取当前日(1-31)
+          let dayNow = year + '/' + month + '/' + day
+          const dateToday = dayNow
+
+          storage.set({
+            key: 'adControlOldDate',
+            value: dateToday
+          })
+          storage.set({
+            key: 'hadSetOldDate',
+            value: 'hadSetOldDate'
+          })
+        }
+
+      }
+    })
+  },
+
+  doAutoLoginAction() {
+    storage.get({
+      key: 'userLoginToken',
+      success: data => {
+        if (data != '') {
+          this.$app.$def.token = data
+          let tokenData = {
+            'token': data
+          }
+          //自动登录获取userInfo
+          userAutomaticLoginApi(tokenData)
+            .then((ret) => {
+              if (ret.status === 200) {
+                this.$app.$def.token = ret.data.token
+                this.$app.$def.userInfo = ret.data.user
+                this.$app.$def.hadLogin = true
+                let updateUserInfoChannel = new BroadcastChannel('updateUserInfoSuccess')
+                updateUserInfoChannel.postMessage('updateUserInfoSuccess')
+              } else {
+                prompt.showToast({
+                  'message': '登录已过期，请重新登录',
+                })
+              }
+            })
+            .catch((error) => {
+              this.getBookshelf()
+            })
+        } else {
+          this.getBookshelf()
+        }
+      }
+    })
+  },
+  startUpAutoLoginAction() {
+    storage.get({
+      key: 'userLoginToken',
+      success: data => {
+        if (data != '') {
+          this.$app.$def.token = data
+          let tokenData = {
+            'token': data
+          }
+          //自动登录获取userInfo
+          userAutomaticLoginApi(tokenData)
+            .then((ret) => {
+              if (ret.status === 200) {
+                this.$app.$def.token = ret.data.token
+                this.$app.$def.userInfo = ret.data.user
+                this.$app.$def.hadLogin = true
+                //通知用到的地方更新数据
+                let userLoginInSuccessChannel = new BroadcastChannel('userLoginInSuccess')
+                userLoginInSuccessChannel.postMessage('userLoginInSuccess')
+              } else {
+                //登录过期时，获取书架书籍
+                this.getBookshelf()
+                prompt.showToast({
+                  'message': '登录已过期，请重新登录',
+                })
+              }
+            })
+            .catch((error) => {
+              //登录异常时，获取书架书籍
+              this.getBookshelf()
+            })
+        } else {
+          //token为空时，获取书架书籍
+          this.getBookshelf()
+        }
+      }
+    })
+  },
+
+  getBookshelf() {
+    this.$app.$def.bookShelfList = []
+    if (this.$app.$def.hadLogin) {
+      let postData = { 'token': this.$app.$def.token }
+      // getBookshelfRemote
+      bookFavoritesInfoApi(postData)
+        .then((ret) => {
+          if (ret.list != '' && ret.list != '[]') {
+            for (let i = 0; i < ret.list.length; i++) {
+              ret.list[i].src = '../Common/images/select-0.png'
+              if (ret.list[i].icon_status === 0) {//推荐角标
+                ret.list[i].recommendicon = '../Common/images/recommend-icon.png'
+              } else if (ret.list[i].icon_status === 1) {//更新角标
+                // do nothing
+              }
+            }
+
+            this.$app.$def.bookShelfList = ret.list
+            //若初次进入，有用户收藏的书籍，当用户把数据清除后，不再推荐
+            storage.set({
+              key: 'hadGotRecommendBooksRemote',
+              value: 'hadGotRecommend'
+            })
+            this.notifyBookShelfUpdate()
+          } else {
+            
+            //进入页面初始化数据
+            storage.get({
+              key: 'hadGotRecommendBooksRemote',
+              success: data => {
+                if (data == '') {
+                  bookShelfRecommendApi('1')
+                    .then((ret) => {
+                      var bookList = ret
+                      for (let i = 0; i < bookList.length; i++) {
+                        bookList[i].src = '../Common/images/select-0.png'
+                        bookList[i].recommendicon = '../Common/images/recommend-icon.png'
+                        bookList[i].book_id = bookList[i].id
+                        bookList[i].chapter_id = 0
+                        bookList[i].chapter_sort = 0
+                        bookList[i].icon_status = 0
+                      }
+                      storage.set({
+                        key: 'hadGotRecommendBooksRemote',
+                        value: 'hadGotRecommend'
+                      })
+
+                      let postData = {
+                        'token': this.$app.$def.token,
+                        'type': 1,
+                        'list': bookList
+                      }
+                      // bookFavoritesSyncApi
+                      bookFavoritesSyncApi(postData)
+                        .then((ret) => {
+                          this.$app.$def.bookShelfList = bookList
+                          this.notifyBookShelfUpdate()
+                        })
+                        .catch((error) => {
+                          this.notifyBookShelfUpdate()
+                          prompt.showToast({
+                            message: '网络连接失败，请检查网络',
+                          })
+                        })
+                    })
+                    .catch((error) => {
+                      this.notifyBookShelfUpdate()
+                    })
+                } else {
+                  this.notifyBookShelfUpdate()
+                }
+              }
+            })
+          }
+        })
+        .catch((error) => {
+          console.log('getBookshelfRemote error=', error)
+        })
+    } else {
+      // getBookshelfCahe
+      storage.get({
+        key: 'bookShelfCache',
+        success: data => {
+          if (data != '' && data != '[]') {
+            var bookList = JSON.parse(data)
+            this.$app.$def.bookShelfList = bookList
+            //若初次进入，本地书架已有书籍，当本地书籍被清空后，不再推荐
+            storage.set({
+              key: 'hadGotRecommendBooksLocal',
+              value: 'hadGotRecommend'
+            })
+            this.notifyBookShelfUpdate()
+          } else {
+            //进入页面初始化数据
+            storage.get({
+              key: 'hadGotRecommendBooksLocal',
+              success: data => {
+                if (data == '') {
+                  bookShelfRecommendApi('1')
+                    .then((ret) => {
+                      for (let i = 0; i < ret.length; i++) {
+                        ret[i].src = '../Common/images/select-0.png'
+                        ret[i].recommendicon = '../Common/images/recommend-icon.png'
+                      }
+                      var bookList = ret
+                      storage.set({
+                        key: 'hadGotRecommendBooksLocal',
+                        value: 'hadGotRecommend'
+                      })
+                      storage.set({
+                        key: 'bookShelfCache',
+                        value: bookList,
+                        success: data => {
+                          this.$app.$def.bookShelfList = bookList
+                          this.notifyBookShelfUpdate()
+                        },
+                        fail: (data, code) => {
+                          this.notifyBookShelfUpdate()
+                        }
+                      })
+                    })
+                    .catch((error) => {
+                      this.notifyBookShelfUpdate()
+                    })
+                } else {
+                  this.notifyBookShelfUpdate()
+                }
+              }
+            })
+          }
+        }
+      })
+    }
+  },
+  notifyBookShelfUpdate() {
+    let addBookToShelfSuccessChannel = new BroadcastChannel('addBookToShelfSuccess')
+    addBookToShelfSuccessChannel.postMessage('addBookToShelfSuccess')
+  },
+  addShortcut() {
+    const self = this
+    shortcut.install({
+      success: function (data) {
+        $umeng_stat.trackEvent('user_add_shortcut_success', {user_imei: self.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+        self.showAddShortcut = false
+        self.$app.$def.showAddShortcut = false
+      },
+      fail(errmsg, errcode) {
+        if (errcode === 201) {
+          prompt.showToast({
+            message: `您已拒绝添加桌面图标，请稍后再试`
+          })
+          return
+        } else {
+          prompt.showToast({
+            message: `${errmsg}`
+          })
+        }
+
+      }
+    })
+  },
+  addShortcutWhenCloseApp() {
+    const self = this
+    shortcut.install({
+      success: function (data) {
+        $umeng_stat.trackEvent('user_add_shortcut_success',{user_imei: self.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+        self.showAddShortcut = false
+        self.$app.$def.showAddShortcut = false
+        self.$app.exit()
+      },
+      fail(errmsg, errcode) {
+        self.$app.exit()
+      }
+    })
+  },
+
+  onBackPress() {
+    // 物理返回键检查 tabbar桌面快捷方式是否创建
+    let enabled = shortcut.systemPromptEnabled
+    const self = this
+    shortcut.hasInstalled({
+      success: function (data) {
+        if (data == false) {
+          self.addShortcutWhenCloseApp()
+        } else {
+          self.$app.exit()
+        }
+      },
+      fail(errmsg, errcode) {
+        self.$app.exit()
+      }
+    })
+
+    return true
+  },
+
+  onShow() {
+    $umeng_stat.resume(this)
+  },
+  onHide() {
+    $umeng_stat.pause(this)
+  },
+
+  onDestroy() {
+    // tabbar桌面快捷方式创建
+    const self = this
+    shortcut.hasInstalled({
+      success: function (data) {
+        if (data == false) {
+          self.addShortcut()
+        }
+      }
+    })
+  },
+  clickTabBar(index) {
+    if (index == 1) {
+      $umeng_stat.trackEvent('shuangbook_tab',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    }
+    // if (index == 3) {
+    //   //书架页  触发书架页插屏广告
+    //   let bookShelfGiooneAdChannel = new BroadcastChannel('bookShelfGiooneAdCreate')
+    //   bookShelfGiooneAdChannel.postMessage('bookShelfGiooneAdCreate')
+    // }
+    this.changeCurrent(index)
+  },
+  changeCurrent(index) {
+    this.tabItems[index].show = true
+    this.currentIndex = index
+
+  },
+  changeTabbarActive(evt) {
+    this.changeCurrent(evt.index)
+  }
+
+}
+</script>

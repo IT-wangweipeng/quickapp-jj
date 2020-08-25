@@ -1,0 +1,565 @@
+<import name="titleBar" src="./../common/titleIndex"></import>
+<import name="wanka-ad-view" src="./../WankaAdSDK/dist/Ad-component/view"></import>
+<template>
+  <div class="bookshelf-page">
+
+    <div class="title-bar">
+      <text class="readHistory" onclick="toReadHistory">阅读记录</text>
+      <div onclick="toSearch">
+        <image class="icon-normal" src="./../Common/images/search.png"></image>
+      </div>
+    </div>
+
+    <list class="book-list" style="columns:{{columnsNum}}">
+
+      <list-item type="listItem" class="list-item" for="{{bookList}}">
+        <stack class="">
+          <image class="image-item" src="{{$item.cover}}" onclick="goRead($item.id, $item.cid, $item.cover, $item.name)" onlongpress="showBookshelfDel()"></image>
+          <image class="recommendicon" src="{{$item.recommendicon}}"></image>
+          <text class="mask" style="{{bookshelfDel}}" onclick="select($item.id)"></text>
+          <image id="{{$item.id}}" class="delete-btn" src="{{$item.src}}" onclick="select($item.id)" style="{{bookshelfDel}}"></image>
+          <!-- <div class="wrap">  会导致 1040+平台版本无法点击
+            <image id="{{$item.id}}" class="btn" src="{{$item.src}}" onclick="select($item.id)" style="{{bookshelfDel}}"></image>
+          </div> -->
+        </stack>
+        <text class="txt">{{ $item.name }}</text>
+      </list-item>
+
+      <list-item type="listItem" class="list-item" for="{{addBookObj}}">
+        <image class="addbookimage-item" src="./../Common/images/image_add_book.png" onclick="gotoBookCityAddbook()"></image>
+        <text class="txt">{{ $item.name }}</text>
+      </list-item>
+
+    </list>
+
+    <div class="del" style="{{bookshelfDel}}">
+      <text class="cancel" onclick="cancelDel">取消</text>
+      <text class="del-num" style="{{delSelectColor}}" onclick="delBook">删除<span>({{ delNum }}本)</span></text>
+    </div>
+
+    <!-- 初次使用 提示层  -->
+    <div class="promts-view" style="{{showPromView}}">
+      <stack class="promts-view-stack">
+        <image class="promts-view-image" src="./../Common/images/yindaoceng.png"></image>
+        <div class="promts-view-div">
+          <text class="promts-top-text">长按图书可进入编辑页面</text>
+          <div class="prompt-button" onclick="disPromptView">
+            <text class="prompt-but-text">我知道啦</text>
+          </div>
+          <div style="height:180px;"></div>
+        </div>
+      </stack>
+    </div>
+
+  </div>
+</template>
+
+<style>
+@import "./../Common/css/index.css";
+@import "./../Common/css/common.css";
+
+.promts-view {
+  display: flex;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background-color: rgba(129, 127, 127, 0.4);
+  align-items: center;
+  justify-content: center;
+}
+.promts-view-image {
+  flex-direction: column;
+  height: 550px;
+  width: 505px;
+  justify-content: center;
+  align-self: center;
+}
+
+.promts-view-div {
+  flex-direction: column;
+  height: 360px;
+  width: 490px;
+  justify-content: center;
+  align-self: center;
+  justify-content: space-between;
+}
+
+.promts-top-text {
+  font-size: 33px;
+  justify-content: center;
+  align-self: center;
+}
+
+.prompt-button {
+  flex-direction: column;
+  height: 70px;
+  width: 200px;
+  justify-content: center;
+  align-self: center;
+  background-color: #ffffff;
+  border-radius: 70px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+  border-right-width: 2px;
+  border-top-width: 2px;
+  border-color: #f85836;
+}
+.prompt-but-text {
+  color: #f85836;
+  align-self: center;
+}
+
+.bookshelf-page {
+  flex-direction: column;
+}
+
+.title-bar {
+  flex-direction: row;
+  height: 60px;
+  margin-top: 13px;
+  margin-bottom: 20px;
+  justify-content: flex-end;
+  align-content: center;
+  margin-right: 33px;
+}
+
+.readHistory {
+  width: 150px;
+  font-size: 32px;
+  text-align: center;
+  color: #000000;
+  margin-right: 28px;
+}
+
+.icon-normal {
+  width: 35px;
+  margin-top: 13px;
+  margin-bottom: 20px;
+  /* margin-top: 5px; */
+}
+
+.book-list {
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.book-list .list-item {
+  margin-top: 31px;
+  margin-left: 31px;
+  text-align: center;
+  flex-direction: column;
+}
+
+.book-list .list-item .wrap {
+  width: 193px;
+  height: 280px;
+}
+
+.book-list .list-item .wrap .btn {
+  width: 50px;
+  height: 50px;
+  background-color: rgba(0, 0, 0, 0);
+  transform: translate(80px, 230px);
+}
+
+.delete-btn {
+  width: 50px;
+  height: 50px;
+  background-color: rgba(0, 0, 0, 0);
+  transform: translate(140px, 230px);
+}
+
+.book-list .list-item .recommendicon {
+  width: 61px;
+  height: 61px;
+  background-color: rgba(0, 0, 0, 0);
+  transform: translate(0px, 0px);
+}
+
+.book-list .list-item .image-item {
+  width: 193px;
+  height: 280px;
+  border-radius: 6px;
+}
+
+.addbookimage-item {
+  width: 193px;
+  height: 280px;
+  border-radius: 3px;
+}
+
+.book-list .list-item .mask {
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  opacity: 0;
+}
+
+.book-list .list-item .txt {
+  font-size: 26px;
+  color: #1e252f;
+  lines: 2;
+  text-overflow: ellipsis;
+  line-height: 45px;
+  text-align: left;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.item {
+  height: 250px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.del {
+  flex-direction: row;
+  justify-content: space-between;
+  position: fixed;
+  bottom: 0px;
+  height: 100px;
+  background-color: #b8b8b8;
+}
+
+.del .del-num,
+.del .cancel {
+  color: #ffffff;
+  text-align: center;
+  width: 50%;
+}
+
+.del .del-num {
+  border-left-width: 2px;
+  border-left-color: #ffffff;
+}
+
+.del .cancel {
+  border-right-width: 2px;
+  border-right-color: #ffffff;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
+
+<script>
+
+import { bookLatelyReadApi, bookFavoritesSyncApi, bookFavoritesDelBookApi, adControlApi, activityPopupApi } from '../Common/api/api.js'
+import prompt from '@system.prompt'
+import router from '@system.router'
+import fetch from '@system.fetch'
+import storage from '@system.storage'
+import share from '@system.share'
+import shareService from '@service.share'
+import device from '@system.device'
+import app from '@system.app'
+
+//金立广告 其他手机不可用
+// import gioneeAd from '@service.ad'
+
+export default {
+  data: {
+    token: '',
+    hadLogin: false,
+    showAD: true,
+    columnsNum: 3,
+    delSelectColor: 'background-color:#b8b8b8',
+    addBookObj: [{ addNewBook: true, name: '添加喜欢的小说' }],//初始有个添加
+    bookList: [],
+    value: [],
+    IMEI: '',
+    deviceModel: '',
+    styleText: 'display: none',
+    bookshelfDel: 'display: none',
+    select: false,
+    delNum: '0',
+    delArr: [],
+    stopEvent: false,
+    banner_id: '4078',//广告位id横幅底部
+    showPromView: 'display: none',
+    // insertAd: null,//金立广告
+    hadDestroyGiooneAd: false,
+
+  },
+
+  protected: {
+    bookId: '',
+    picUrl: '',
+    bookName: '',
+    cid: '',
+    placeholder: '',
+  },
+
+  onInit() {
+
+    this.getIMEI() //获取设备IMEI 及是否第一次打开的标识showPromView
+    this.getBookshelf() //获取书架列表
+
+    const self = this
+    let addBookToShelfSuccessChannel = new BroadcastChannel('addBookToShelfSuccess') // 加入书架监听
+    addBookToShelfSuccessChannel.onmessage = function (e) {
+      if (e.data == 'addBookToShelfSuccess') {
+        self.getBookshelf()
+      }
+    }
+  },
+
+  onDestroy() {
+    
+  },
+
+  getBookshelf() {
+    this.token = this.$app.$def.token
+    this.hadLogin = this.$app.$def.hadLogin
+    // 直接用this.$app.$def.bookShelfList赋值，会出现从详情页加入书架，在书架删除，选中图标没变化问题
+    let tmpList = JSON.stringify(this.$app.$def.bookShelfList)
+    this.bookList = JSON.parse(tmpList)
+    console.log('书架bookList------', this.bookList)
+  },
+  gotoBookCityAddbook() {
+    $umeng_stat.trackEvent('bookshelf_add_book_clicked', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    this.bookshelfDel = 'display:none'
+    let addBookChannel = new BroadcastChannel('toBookCityAddBook')
+    addBookChannel.postMessage('toBookCityAddNewBook')
+  },
+
+  toReadHistory() {
+    $umeng_stat.trackEvent('bookshelf_read_history_clicked', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    router.push({
+      uri: '/BookShelf/ReadHistory'
+    })
+  },
+
+  toSearch() {
+    $umeng_stat.trackEvent('bookshelf_search_clicked', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    router.push({
+      uri: '/Search',
+    })
+  },
+
+  //阅读页
+  goRead(id, cid, cover, name) {
+    $umeng_stat.trackEvent('bookshelf_open_book_clicked', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+
+    let targetObject = {}
+    //将最后阅读的放第一个  分未登录和已登录两种情况
+    if (!this.hadLogin) {
+
+      this.pushToNovelContentPage(id, cid, cover, name)
+
+      console.log('未登录状态 -- 书架页点击去看书')
+      let forBookId = id
+      for (let i = 0; i < this.bookList.length; i++) {
+        if (this.bookList[i].id === forBookId) {
+          targetObject = this.bookList[i]
+          this.bookList.splice(i, 1) // 如果数据组存在该元素，则把该元素删除
+          break
+        }
+      }
+      this.bookList.unshift(targetObject) // 再添加到第一个位置
+      console.log('未登录排好顺序的数组 -- this.bookList', this.bookList)
+      storage.set({
+        key: 'bookShelfCache',
+        value: this.bookList,
+        success: data => {
+          this.$app.$def.bookShelfList = this.bookList
+        },
+        fail: (data, code) => {
+          console.log('未登录保存书架顺序 error=', code)
+        }
+      })
+    }
+
+    if (this.hadLogin) {
+
+      console.log('已登录状态 -- 书架页点击去看书')
+      let postData = {
+        'token': this.$app.$def.token,
+        'book_id': id,
+        'chapter_id': 0,
+        'chapter_sort': 0
+      }
+      bookLatelyReadApi(postData)
+        .then((ret) => {
+          console.log('书架页点击去看书 -- 已登录状态 --   add ret', ret)
+          if (ret.status == 200) {
+
+            let forBookId = id
+            for (let i = 0; i < this.bookList.length; i++) {
+              if (this.bookList[i].id === forBookId) {
+                targetObject = this.bookList[i]
+                this.bookList.splice(i, 1) // 如果数据组存在该元素，则把该元素删除
+                break
+              }
+            }
+            this.bookList.unshift(targetObject) // 再添加到第一个位置
+            this.$app.$def.bookShelfList = this.bookList
+            this.pushToNovelContentPage(id, cid, cover, name)
+
+          } else {
+            //其他情况不做处理
+            this.pushToNovelContentPage(id, cid, cover, name)
+          }
+
+        })
+        .catch((error) => {
+          console.log('bookLatelyReadApi error=', error)
+          this.pushToNovelContentPage(id, cid, cover, name)
+        })
+    }
+
+  },
+
+  pushToNovelContentPage(id, cid, cover, name) {
+    router.push({
+      uri: '/NovelContent',
+      params: {
+        bookId: id,
+        cid: cid,
+        picUrl: cover,
+        bookName: name,
+      }
+    })
+  },
+
+  showBookshelfDel() {
+    this.bookshelfDel = 'display:flex'
+    this.stopEvent = true
+    this.showAD = false
+  },
+
+  getIMEI() {
+    //获取是否是首次使用 并控制提示
+    storage.get({
+      key: 'showPromView',
+      success: data => {
+        if (data != '') {
+          this.showPromView = 'display:none'
+        } else {
+          this.showPromView = 'display:flex'
+        }
+      }
+    })
+
+    //获取设备唯一标识 imei
+    device.getDeviceId({
+      success: data => {
+        this.IMEI = data.deviceId
+        storage.set({
+          key: 'IMEI',
+          value: this.IMEI
+        })
+      },
+      fail: (data, code) => {
+        this.IMEI = ''
+      }
+    })
+
+    device.getInfo({
+      success: ret => {
+        this.deviceModel = ret.model
+        storage.set({
+          key: 'deviceModel',
+          value: this.deviceModel
+        })
+      },
+      fail: (data, code) => {
+        this.deviceModel = ''
+      }
+    })
+  },
+
+  select(id) {
+    //选择删除的书籍的id
+    if (this.delArr.find(item => item == id) > 0) {
+      this.delArr.splice(this.delArr.findIndex(item => item === id), 1)
+      this.bookList[this.bookList.findIndex(item => item.id === id)].src = '../Common/images/select-0.png'
+      this.delNum = this.delArr.length
+    } else {
+      this.delArr.push(id)
+      this.bookList[this.bookList.findIndex(item => item.id === id)].src = '../Common/images/select-1.png'
+      this.delNum = this.delArr.length
+    }
+
+    if (this.delNum > 0) {
+      this.delSelectColor = 'background-color:#fc844a'
+    } else {
+      this.delSelectColor = 'background-color:#b8b8b8'
+    }
+  },
+
+  delBook() {
+    var bookList = this.bookList.filter(item => !this.delArr.some(ele => ele === item.id))
+
+    if (this.hadLogin) {
+      for (let i = 0; i < bookList.length; i++) {
+        bookList[i].book_id = bookList[i].id
+        bookList[i].chapter_id = 0
+        bookList[i].chapter_sort = 0
+      }
+      let postData = {
+        'token': this.token,
+        'type': 1,
+        'list': bookList
+      }
+      bookFavoritesSyncApi(postData)
+        .then((ret) => {
+          this.bookList = bookList
+          this.$app.$def.bookShelfList = bookList
+          this.cancelDel()
+        })
+        .catch((error) => {
+          console.log('bookFavoritesSyncApi error=', error)
+          this.cancelDel()
+          prompt.showToast({
+            message: '网络连接失败，请检查网络',
+          })
+        })
+
+    } else {
+      storage.set({
+        key: 'bookShelfCache',
+        value: bookList,
+        success: data => {
+          this.bookList = bookList
+          this.$app.$def.bookShelfList = bookList
+          this.cancelDel()
+        },
+        fail: (data, code) => {
+          this.cancelDel()
+        }
+      })
+    }
+  },
+  cancelDel() {
+    this.bookshelfDel = 'display:none'
+    this.delArr = []
+    this.delNum = '0'
+    this.stopEvent = false
+    this.bookList.forEach(item => {
+      item.src = '../Common/images/select-0.png'
+    })
+    if (this.delNum > 0) {
+      this.delSelectColor = 'background-color:#fc844a'
+    } else {
+      this.delSelectColor = 'background-color:#b8b8b8'
+    }
+  },
+
+  //移除第一次打开的提示
+  disPromptView() {
+    this.showPromView = 'display:none'
+    storage.set({
+      key: 'showPromView',
+      value: 'hadShowThePromp'
+    })
+  },
+
+}
+</script>

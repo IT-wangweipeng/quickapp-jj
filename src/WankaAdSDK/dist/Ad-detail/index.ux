@@ -1,0 +1,12 @@
+<import name="wanka-ad-view" src="../Ad-component/view.ux"></import><template><div class="wk-ad-wrap" style="width: 100%;height: 100%;"><div if="{{ !is_ad_detail }}"><wanka-ad-view type="openning" adslot_id="{{ adslot_id }}" delay="{{ delay }}" @ad-show="onadShow" @ad-click="onadClick" @ad-error="onadError" @ad-closed="onadClosed"></wanka-ad-view></div><div else style="width: 100%;height: 100%;"><div show="{{ loading }}" class="load-mask" style=""><text class="text">加载中...</text></div><web id="ad-page" src="{{ ad_url }}" @pagefinish="loadFinish"></web></div></div></template><style scoped>.load-mask{
+        width: 100%;
+        height: 100%;
+        background-color:#f1f1f1;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .load-mask .text{
+        color: #aaaaaa;
+        font-size: 36px;
+    }</style><script src="./js/index.js"></script>

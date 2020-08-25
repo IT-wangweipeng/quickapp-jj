@@ -1,0 +1,332 @@
+<import name="titleBar" src="../Common/titleBar"></import>
+<template>
+
+  <div class="play" onclick="controlKeyBoard">
+
+    <titleBar title="{{titleName}}" onleft-button-clicked="back" left-button="../Common/images/arrow-left-0.png"></titleBar>
+    <text style="margin-left: 70px;margin-top: 80px;font-size: 60px;color: #000000;">登录</text>
+    <text style="margin-left: 70px;margin-top: 30px;font-size: 40px;color: #808080;">欢迎您使用极佳小说</text>
+    <input id="phoneNumInputId" class="input-phone-num" type="number" maxlength="11" placeholder="请输入您的手机号" onchange="userPhoneNum"></input>
+
+    <div class="input-sms-num">
+      <input id="smsCodeInputId" class="input-sms-num-text" type="number" maxlength="6" placeholder="验证码" onchange="userValidNum"></input>
+      <text class="get-sms-button" show="{{!isCount}}" onclick="getSms()">{{getSmsButtonTxt}}</text>
+      <text class="get-sms-button-count" show="{{isCount}}">{{countTxt}}秒后重试</text>
+    </div>
+
+    <div class="login-button-cant" show="{{ !infoRight }}">
+      <text class="login-text">{{logintxt}}</text>
+    </div>
+    <div class="login-button-can" onclick="goSignIn()" show="{{ infoRight }}">
+      <text class="login-text">{{logintxt}}</text>
+    </div>
+
+    <div class="agreement">
+      <text class="agreement-text">登录即同意</text>
+      <text class="agreement-text" onclick="gotoUserAgreement()">《用户协议》</text>
+      <text class="agreement-text">及</text>
+      <text class="agreement-text" onclick="gotoPrivacyAgreement()">《隐私服务》</text>
+    </div>
+
+    <div class="loading-gif" show="{{showLoadGif}}">
+      <image class="load-image" src="../Common/images/loading.gif"></image>
+    </div>
+
+  </div>
+
+</template>
+
+<style>
+.play {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-phone-num {
+  height: 100px;
+  margin-top: 100px;
+  margin-left: 70px;
+  margin-right: 70px;
+  border-bottom: 0.5px;
+  border-bottom-color: rgba(0, 0, 0, 0.38);
+}
+.input-sms-num {
+  flex-direction: row;
+  justify-content: space-between;
+  height: 100px;
+  margin-top: 30px;
+  margin-left: 70px;
+  margin-right: 70px;
+  border-bottom: 0.5px;
+  border-bottom-color: rgba(0, 0, 0, 0.38);
+}
+.input-sms-num-text {
+  height: 100px;
+  margin-left: 0px;
+}
+.get-sms-button {
+  height: 100px;
+  width: 180px;
+  margin-right: 0px;
+  font-size: 30px;
+  color: rgb(255, 75, 63);
+}
+.get-sms-button-count {
+  height: 100px;
+  width: 180px;
+  margin-right: 0px;
+  font-size: 30px;
+  color: rgba(0, 0, 0, 0.38);
+}
+
+.login-button-cant {
+  flex-direction: column;
+  justify-content: center;
+  height: 100px;
+  margin-top: 80px;
+  margin-left: 100px;
+  margin-right: 100px;
+  border-radius: 50px;
+  background-color: rgb(172, 172, 184);
+  align-items: center;
+}
+.login-button-can {
+  flex-direction: column;
+  justify-content: center;
+  height: 100px;
+  margin-top: 80px;
+  margin-left: 100px;
+  margin-right: 100px;
+  border-radius: 50px;
+  background-color: rgb(255, 75, 63);
+  align-items: center;
+}
+.login-text {
+  font-size: 35px;
+  color: #ffffff;
+}
+
+.agreement {
+  flex-direction: row;
+  justify-content: center;
+  margin-top: 30px;
+}
+.agreement .agreement-text {
+  font-size: 25px;
+  color: #000000;
+}
+.loading-gif {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+}
+.load-image {
+  width: 100px;
+  height: 100px;
+}
+</style>
+
+
+<script>
+import { sendSmsCodeApi, userLoginApi } from '../Common/api/api.js'
+import storage from '@system.storage'
+import router from '@system.router'
+import prompt from '@system.prompt'
+
+export default {
+
+  private: {
+    infoRight: false,
+    showLoadGif: false,
+    titleName: '',
+    getSmsButtonTxt: '获取验证码',
+    logintxt: '登录',
+    isCount: false,
+    countTxt: '60',
+    phoneNum: '',
+    validNum: '',
+
+  },
+
+  protected: {
+    isFrom: 'mine'
+  },
+
+  onInit() {
+  },
+
+  //1050版本会异常 所以暂时注释
+  // onShow() {
+  //   this.$element('phoneNumInputId').focus({ focus: true })
+  // },
+  // onHide() {
+  //   this.$element('phoneNumInputId').focus({ focus: false })
+  //   this.$element('smsCodeInputId').focus({ focus: false })
+  // },
+  // controlKeyBoard() {
+  //   this.$element('phoneNumInputId').focus({ focus: false })
+  //   this.$element('smsCodeInputId').focus({ focus: false })
+  // },
+  goSignIn() {
+
+    this.showLoadGif = true
+    //登录
+    let userLoginApiData = {
+      phone: this.phoneNum,
+      code: this.validNum
+    }
+    userLoginApi(userLoginApiData)
+      .then((ret) => {
+
+        let userData = ret
+        this.showLoadGif = false
+        //保存登录token
+        storage.set({
+          key: 'userLoginToken',
+          value: userData.token
+        })
+
+        this.$app.$def.token = userData.token
+        this.$app.$def.userInfo = userData.user
+        this.$app.$def.hadLogin = true
+
+        let userLoginInSuccessChannel = new BroadcastChannel('userLoginInSuccess')
+        userLoginInSuccessChannel.postMessage('userLoginInSuccess')
+
+        //性别 ：3-未知
+        if (userData.user.sex && Number(userData.user.sex) == 3) {
+          //性别及阅读口味设置
+          if (this.isFrom == 'openVIP') {
+
+            if (userData.user.is_vip === 1) {
+              //已经是VIP
+              router.back()
+
+            } else {
+
+              router.replace({
+                uri: 'Mine/UserSexSetUp',
+                params: {
+                  isFrom: 'openVIP'
+                }
+              })
+            }
+
+          } else {
+
+            router.replace({
+              uri: 'Mine/UserSexSetUp'
+            })
+
+          }
+
+
+        } else {
+
+          if (this.isFrom == 'openVIP') {
+            if (userData.user.is_vip === 1) {
+              //已经是VIP
+              router.back()
+
+            } else {
+              router.replace({
+                uri: 'MemberCenter'
+              })
+            }
+
+          } else {
+            this.back()
+          }
+        }
+      })
+      .catch((error) => {
+        this.showLoadGif = false
+        prompt.showToast({
+          message: '登录失败，请重试',
+          duration: 1
+        })
+      })
+  },
+
+  getSms() {
+
+    if (this.phoneNum.length == 11) {
+
+      this.isCount = !this.isCount
+
+      var interval = setInterval(() => {
+        this.countTxt -= 1
+        if (Number(this.countTxt) <= 0) {
+          this.isCount = !this.isCount
+          this.countTxt = 60
+          clearInterval(interval)
+        }
+      }, 1000)
+
+      //请求短信
+      let sendSmsCodeApiData = { 'phone': this.phoneNum }
+      sendSmsCodeApi(sendSmsCodeApiData)
+        .then((ret) => {
+          prompt.showToast({
+            message: '短信发送成功',
+            duration: 1
+          })
+        })
+        .catch((error) => {
+          prompt.showToast({
+            message: '短信发送失败，请重试',
+            duration: 1
+          })
+        })
+
+    } else {
+      prompt.showToast({
+        message: '请输入正确的手机号码'
+      })
+    }
+  },
+
+  userPhoneNum(e) {
+    this.phoneNum = e.value
+    if (this.phoneNum.length == 11 && this.validNum.length == 6) {
+      this.infoRight = true
+    } else {
+      this.infoRight = false
+    }
+  },
+  userValidNum(e) {
+    this.validNum = e.value
+    if (this.phoneNum.length == 11 && this.validNum.length == 6) {
+      this.infoRight = true
+    } else {
+      this.infoRight = false
+    }
+  },
+
+  back() {
+    router.back()
+  },
+
+  gotoUserAgreement() {
+    router.push({
+      uri: 'WebView',
+      params: {
+        url: 'http://h5read.mjpet.net/html/service_k.html',
+        titleName: '用户协议'
+      }
+    })
+  },
+  gotoPrivacyAgreement() {
+    router.push({
+      uri: 'WebView',
+      params: {
+        url: 'http://h5read.mjpet.net/html/privacy_k.html',
+        titleName: '隐私服务'
+      }
+    })
+  },
+}
+</script>
+

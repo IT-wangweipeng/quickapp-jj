@@ -1,0 +1,165 @@
+<!-- 分类tab 1,男频  2,女频  3,图书 -->
+<import name="CommonCatePage" src="./CatePage/index.ux"></import>
+
+<template>
+  <div class="market-page">
+
+    <div class="flexible-tabbar">
+      <div for="{{(index,item) in tabItems}}" class="tab-item" onclick="clickTabBar(index)">
+        <text class=" {{currentIndex === index ? 'active' : 'tab-text'}}">{{item.text}}</text>
+      </div>
+    </div>
+
+    <tabs class="tabs" onchange="changeTabactive" index="{{currentIndex}}">
+      <tab-content class="tab-content">
+        <div class="item-container">
+          <CommonCatePage sex="1"></CommonCatePage>
+        </div>
+        <div class="item-container">
+          <CommonCatePage sex="2"></CommonCatePage>
+        </div>
+        <div class="item-container">
+          <CommonCatePage sex="3"></CommonCatePage>
+        </div>
+      </tab-content>
+    </tabs>
+
+  </div>
+</template>
+
+<style>
+.market-page {
+  flex-direction: column;
+  background-color: #ffffff;
+}
+.flexible-tabbar {
+  display: flex;
+  height: 80px;
+  border-bottom-color: #eeeeee;
+  border-bottom-width: 1px;
+}
+.tabs {
+  flex: 1;
+  height: 88px;
+  justify-content: center;
+}
+.tab-bar {
+  height: 87px;
+  border-bottom-width: 1px;
+  border-bottom-color: #eeeeee;
+}
+.tab-content {
+  flex: 1;
+  width: 750px;
+}
+
+.tab-text {
+  text-align: center;
+}
+.tab-text:active {
+  color: #f76160;
+}
+
+.item-container {
+  flex-direction: column;
+}
+
+.icon-normal {
+  position: fixed;
+  align-items: flex-end;
+  align-self: flex-start;
+}
+
+.tab-item {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.tab-item .tab-text {
+  font-size: 32px;
+  color: #bbbbbb;
+}
+.tab-item .active {
+  font-size: 32px;
+  color: #f76160;
+}
+</style>
+
+<script>
+import { bookCategoryApi } from '../Common/api/api.js'
+import router from '@system.router'
+import storage from '@system.storage'
+
+
+export default {
+
+  data: {
+    token: '',
+    userInfoData: {},
+    placeholder: '',
+    currentIndex: 0,
+    tabItems: [
+      {
+        text: '男频',
+        show: false
+      },
+      {
+        text: '女频',
+        show: false
+      },
+      {
+        text: '图书',
+        show: false
+      }
+    ]
+  },
+
+  onInit() {
+    this.refreshUI()
+
+    const self = this
+    let userInfoUpdated = new BroadcastChannel('updateUserInfoSuccess')
+    userInfoUpdated.onmessage = function (e) {
+      if (e.data === 'updateUserInfoSuccess') {
+        self.refreshUI()
+      }
+    }
+  },
+
+  refreshUI() {
+    this.token = this.$app.$def.token
+    this.userInfoData = this.$app.$def.userInfo
+    if (this.userInfoData.id === undefined) {
+      this.changeCurrent(0)
+      return
+    }
+    if (this.userInfoData.sex === 1) {
+      this.changeCurrent(0)
+    } else if (this.userInfoData.sex === 2) {
+      this.changeCurrent(1)
+    } else {
+      this.changeCurrent(0)
+    }
+  },
+  changeTabactive(e) {
+    // 切换tab
+    console.info('切换tab: ' + e.index)
+    this.changeCurrent(e.index)
+  },
+
+  clickTabBar(index) {
+    this.changeCurrent(index)
+  },
+  changeCurrent(index) {
+    this.tabItems[index].show = true
+    this.currentIndex = index
+  },
+
+  toSearch() {
+    console.info('可以跳转吗？？？？ ')
+  },
+
+}
+</script>

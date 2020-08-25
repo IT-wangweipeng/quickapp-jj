@@ -1,0 +1,246 @@
+<import name="wanka-ad-view" src="./../WankaAdSDK/dist/Ad-component/view"></import>
+<template>
+  <div class="launch">
+    <!-- 开屏广告组件 -->
+    <div if="showWankaOpenAd">
+      <wanka-ad-view type="openning" adslot_id="{{ adslot_id }}" enter_app="{{ false }}" delay="{{ delay }}" @ad-ready="onadReady" @ad-show="onadShow" @ad-click="onadClick" @ad-error="onadError" @ad-closed="onadClosed">
+      </wanka-ad-view>
+    </div>
+
+    <!-- 自留广告组件 -->
+    <div class="retent-ad-div" if="{{showRetentionAd}}">
+      <stack>
+
+        <!-- onclick="goToRetentionAdWebPage()" -->
+        <image class="retent-ad-img" src="{{retentimage}}" onclick="goToRetentionAdWebPage()"></image>
+        <!-- <a class="retent-ad-aUrl" href="{{jsUrl}}" onclick="goToBrowser">{{empty}}</a> -->
+        <text class="retent-ad-remove-image" src="../Common/images/close.png" onclick="removeRetentAd()">跳过 {{countNum}}s</text>
+      </stack>
+    </div>
+
+  </div>
+</template>
+
+<script>
+//系统接口
+import router from '@system.router'
+import prompt from '@system.prompt'
+//api接口
+import { adControlApi, retentionAdApi } from '../Common/api/api.js'
+
+export default {
+
+  private: {
+    splashAd: null, //gionee open ad 
+    adslot_id: '',  // 广告位 id
+    request_id: '',
+    delay: 6,   // 开屏广告播放时间
+    showWankaOpenAd: false,//玩咖广告
+    showRetentionAd: false,//自留广告
+    retentimage: '',
+    retent_jump_url: '',
+    interval: '',
+    countNum: 6,
+    jsUrl:'',
+    empty:'   '
+  },
+
+  onInit() {
+
+    console.log('Launchpage.ux---------------------')
+    //为兼容其他手机跑项目 可注释金立相关代码
+    const self = this
+    adControlApi(10)
+      .then((ret) => {
+
+        console.log('openad adType ***********', ret)
+        if (ret.list.length > 0 && Number(ret.list[0].type) === 5) {//玩咖 
+
+          self.adslot_id = ret.list[0].ad_id
+          self.showWankaOpenAd = true
+          console.log('openad this.adslot_id ***********', self.adslot_id)
+
+        } else if (ret.list.length > 0 && Number(ret.list[0].type) === 6) {//金立是6
+
+          setTimeout(function () {
+            router.replace({
+              uri: 'TabBar'
+            })
+          }, 1000)
+
+        } else {
+
+          console.log('后台无配置开屏广告')
+          setTimeout(function () {
+            router.replace({
+              uri: 'TabBar'
+            })
+          }, 1000)
+        }
+
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        router.replace({
+          uri: 'TabBar'
+        })
+      })
+  },
+
+  onDestroy() {
+
+  },
+
+  //请求自留广告
+  getRetentionAdData() {
+    const self = this
+    //广告类型  1 信息流  2 开屏 3 banner
+    retentionAdApi(2)
+      .then((ret) => {
+
+        console.log('retentionAdApi ret ***********', ret)
+        if (ret.imgurl && ret.imgurl.length > 0) {
+          //自留广告成功埋点
+          $umeng_stat.trackEvent('own_openad_request_success', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+          this.showRetentionAd = true
+          this.retentimage = ret.imgurl
+          this.retent_jump_url = ret.jump_url
+          this.jsUrl = `javascript: void((function() {window.location.href=' `+ this.retent_jump_url + `'})())`
+
+          //倒计时 
+          self.interval = setInterval(() => {
+            self.countNum -= 1
+            if (Number(self.countNum) <= 0) {
+              clearInterval(this.interval)
+              self.showRetentionAd = false
+              router.replace({
+                uri: 'TabBar'
+              })
+            }
+            
+          }, 1000)
+
+        } else {
+
+          setTimeout(function () {
+            router.replace({
+              uri: 'TabBar'
+            })
+          }, 1000)
+
+        }
+
+      })
+      .catch((error) => {
+        console.log('error=', error)
+        router.replace({
+          uri: 'TabBar'
+        })
+      })
+  },
+
+  removeRetentAd() {
+    clearInterval(this.interval)
+    router.replace({
+      uri: 'TabBar'
+    })
+  },
+
+  goToBrowser(){
+    //自留广告点击埋点
+    console.log('跳转外部浏览器 launch page==========')
+    //清除计时器
+    clearInterval(this.interval)
+    //自留广告点击埋点
+    $umeng_stat.trackEvent('own_openad_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+
+    router.replace({
+      uri: 'TabBar'
+    })
+  },
+
+  goToRetentionAdWebPage() {
+    //清除计时器
+    clearInterval(this.interval)
+    //自留广告点击埋点
+    $umeng_stat.trackEvent('own_openad_click', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    //链接
+    router.push({
+      uri: 'WebView',
+      params: {
+        url: this.retent_jump_url,
+        type: 2
+      }
+    })
+  },
+
+  //玩咖开屏相关
+  onadReady(args) {
+    $umeng_stat.trackEvent('wanka-ad_request_4035', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    // console.log('wanca open ready--------------------',args)
+  },
+
+  onadShow(args) {
+    $umeng_stat.trackEvent('wanka-ad_show_4035', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    // console.log('wanca open show--------------------',args)
+  },
+  onadClick(args) {
+    $umeng_stat.trackEvent('wanka-ad_click_4035', { user_imei: this.$app.$def.IMEI, user_deviceid: this.$app.$def.DeviceId })
+    // console.log('wanca open click--------------------',args)
+  },
+  onadError(args) {
+    // console.log('wanca open error--------------------',args)
+    this.showWankaOpenAd = false //关闭玩咖
+
+    ///玩咖广告失败得时候请求自留广告
+    this.getRetentionAdData()
+
+
+  },
+  onadClosed(args) {
+    // console.log('wanca open close--------------------',args)
+    router.replace({
+      uri: 'TabBar'
+    })
+  }
+
+}
+</script>
+
+
+<style>
+.launch {
+  background-size: cover;
+  background-image: url(http://d.gionee.com/nav/20190620/lockimage/20190620/20190620173216.jpg);
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.retent-ad-div{
+
+}
+.retent-ad-img {
+  width: 100%;
+  height: 100%;
+}
+
+.retent-ad-aUrl{
+  width: 100%;
+  height: 100%;
+}
+
+.retent-ad-remove-image {
+  color: #ffffff;
+  font-size: 25px;
+  text-align: center;
+  height: 50px;
+  width: 110px;
+  position: absolute;
+  transform: translate(620px, 20px);
+  background-color:  rgba(129, 127, 127, 0.3);
+  border-width: 1px;
+  border-radius: 15px;
+  border-color:  rgba(129, 127, 127, 0.3);
+
+}
+</style>

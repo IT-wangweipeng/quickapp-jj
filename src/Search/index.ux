@@ -1,0 +1,369 @@
+<import name="wanka-ad-view" src="../WankaAdSDK/dist/Ad-component/view"></import>
+<template>
+  <div class="main-page">
+    <!-- 搜索栏-->
+    <div class="title-wrap">
+      <div class="search-wrap">
+        <image class="icon-search" src="../Common/images/search.png"></image>
+        <input type="text" class="input-wrap" onchange="change" onenterkeyclick="enterkeyclick"></input>
+      </div>
+      <text class="title-text" onclick="goBack()">取消</text>
+    </div>
+
+    <!-- 热搜排行  -->
+    <div class="hotword-title" show="{{!isSearched}}">
+      <text class="hotword-title-text">热搜排行</text>
+    </div>
+    <list class="hotword-list" show="{{!isSearched}}">
+      <block for="hotwordList">
+        <list-item type="hotword-listitem" class="hotword-list-item" onclick="recommendItemClick($item.id)">
+          <text class="hotword-idx-text" style="background-color:#ea3d36" if="{{$idx === 0}}">{{$idx + 1}}</text>
+          <text class="hotword-idx-text" style="background-color:#f58318" elif="{{$idx === 1}}">{{$idx + 1}}</text>
+          <text class="hotword-idx-text" style="background-color:#feba28" elif="{{$idx === 2}}">{{$idx + 1}}</text>
+          <text class="hotword-idx-text" else>{{$idx + 1}}</text>
+          <text class="hotword-name-text">{{$item.name}}</text>
+        </list-item>
+      </block>
+    </list>
+
+    <div class="ad-one-position" if="{{showSearchAd}}" show="{{!isSearched}}">
+      <wanka-ad-view type="native" adslot_id="{{ nativeAdId }}" @ad-ready="onadOneReady" @ad-error="onadOneError" @ad-closed="onadOneClosed" @ad-show="onadOneShow" @ad-click="onadOneClick"></wanka-ad-view>
+    </div>
+
+    <!-- 搜索结果列表 -->
+    <list class="search-list" onscrollbottom="scrollBottom" show="{{isSearched}}">
+      <block if="{{type === 2}}">
+        <list-item type="tip">
+          <text class="tip_text">暂无结果，试试大家都在看的书吧</text>
+        </list-item>
+      </block>
+
+      <block for="{{searchList}}">
+
+        <list-item type="adShow">
+          <div class="ad-position" if="{{($idx+1)%5===0 && $item.showAd}}">
+            <wanka-ad-view type="native" adslot_id="{{ nativeListAdId }}" @ad-ready="onadReady( $item )" @ad-error="onadError( $item )" @ad-closed="onadClosed( $item )" @ad-show="onadShow( $item )" @ad-click="onadClick( $item )"></wanka-ad-view>
+          </div>
+        </list-item>
+
+        <list-item type="search-listitem" class="search-listitem">
+          <div class="common-item-container" onclick="searchItemClick($item.id)">
+            <image class="common-item-icon" src="{{$item.cover}}"></image>
+            <div class="common-item-top-right-container">
+              <div class="common-item-top-right-title-container">
+                <text class="common-item-name">{{$item.name}}</text>
+                <text class="common-item-score">{{$item.score}}分</text>
+              </div>
+              <text class="common-item-brief">{{$item.brief}}</text>
+              <div class="common-item-placeholder">
+              </div>
+              <div class="common-item-bottom-container">
+                <text class="common-item-author">{{$item.author}}</text>
+                <text class="common-item-cateogry">{{$item.category_name}}</text>
+              </div>
+            </div>
+          </div>
+        </list-item>
+      </block>
+
+      <list-item type="loadStatus" class="load-more" show="{{!isLoadingData}}">
+        <progress type="circular" show="{{ hasMore}}"></progress>
+        <text show="{{ hasMore}}">加载更多...</text>
+        <text show="{{ hasMore==false }}">没有更多了~</text>
+      </list-item>
+    </list>
+
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+import { search, searchRecommend, adControlApi } from '../Common/api/api.js'
+
+export default {
+  private: {
+    sex: 3,
+    hotwordList: [],
+    isSearched: false,
+    size: 10,
+    start: 0,
+    keyword: '',
+    searchList: [],
+    isLoadingData: false,
+    hasMore: false,
+    type: 0, //默认是0, 1:搜索有结果 2:搜索无结果
+    nativeAdId: '', // 广告位 id ：测试4374   正式3999
+    nativeListAdId: '', // 广告位 id ： 搜索结果列表广告位 测试4374   正式4000
+    showSearchAd: false,
+  },
+  onInit() {
+    this.getSearchRecommendData()
+    this.getAdControlInfoFromApi(18)//搜索页18
+    this.getListAdControlInfoFromApi(19)//搜索结果页19
+  },
+  onShow() {
+    $umeng_stat.resume(this)
+  },
+  onHide() {
+    $umeng_stat.pause(this)
+  },
+  getSearchRecommendData() {
+    searchRecommend(this.sex)
+      .then((ret) => {
+        this.hotwordList = ret
+      })
+      .catch((error) => {
+        console.log('searchRecommend error=', error)
+      })
+  },
+  change(e) {
+    if (e.value === '') {
+      this.isSearched = false
+    }
+  },
+  enterkeyclick(e) {
+    this.keyword = e.value
+    if (this.keyword === '') {
+      return
+    }
+    this.isSearched = true
+    this.start = 0
+    this.searchList = []
+    this.doSearch()
+  },
+  doSearch() {
+    this.isLoadingData = true
+    search(this.size, this.start, this.keyword)
+      .then((ret) => {
+        this.isLoadingData = false
+        this.hasMore = ret.hasMore
+        this.type = ret.type
+
+        // 给数据增加广告显示状态，控制每一条广告的显示、隐藏
+        const newList = ret.list.map(item => {
+          item.showAd = 1
+          return item
+        })
+        this.searchList = this.searchList.concat(newList)
+      })
+      .catch((error) => {
+        console.log('search error=', error)
+        this.isLoadingData = false
+      })
+  },
+  scrollBottom() {
+    //加载下一页
+    if (!this.isLoadingData && this.hasMore) {
+      this.start = this.start + this.size
+      this.doSearch()
+    }
+  },
+  goToDetail(bookId) {
+    router.push({
+      uri: 'BookDetail',
+      params: {
+        bookId: bookId,
+      }
+    })
+  },
+  recommendItemClick(bookId) {
+    $umeng_stat.trackEvent('book_search_recommend_item_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    this.goToDetail(bookId)
+  },
+  searchItemClick(bookId) {
+    $umeng_stat.trackEvent('book_search_list_item_clicked',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+    this.goToDetail(bookId)
+  },
+  goBack() {
+    router.back()
+  },
+
+  getAdControlInfoFromApi(num) {
+    adControlApi(num)
+      .then((ret) => {
+        if (ret != undefined) {
+          if (Number(ret.list[0].type) === 5) {
+            this.nativeAdId = ret.list[0].ad_id
+            this.showSearchAd = true
+          } else {
+            this.nativeAdId = '3999'
+            this.showSearchAd = true
+          }
+        } else {
+          this.nativeAdId = '3999'
+          this.showSearchAd = true
+        }
+      })
+      .catch((error) => {
+        this.nativeAdId = '3999'
+        this.showSearchAd = true
+        console.log('error=', error)
+      })
+  },
+
+  getListAdControlInfoFromApi(num) {
+    adControlApi(num)
+      .then((ret) => {
+        if (ret != undefined) {
+          if (Number(ret.list[0].type) === 5) {
+            this.nativeListAdId = ret.list[0].ad_id
+          } else {
+            this.nativeListAdId = '4000'
+          }
+        } else {
+          this.nativeListAdId = '4000'
+        }
+      })
+      .catch((error) => {
+        this.nativeListAdId = '4000'
+        console.log('error=', error)
+      })
+  },
+
+  // 广告相关
+  // 未搜索时   3999
+  onadOneReady(args) {
+    console.log('search wanka-ad_request_3999', args)
+    $umeng_stat.trackEvent('wanka-ad_request_3999',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+  },
+  onadOneError(args) {
+    console.log('search wanka-ad_request_3999 error', args)
+    this.showAd = false
+  },
+  onadOneClosed() {
+    this.showAd = false
+  },
+  onadOneShow() {
+    $umeng_stat.trackEvent('wanka-ad_show_3999',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+  },
+  onadOneClick() {
+    $umeng_stat.trackEvent('wanka-ad_click_3999',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+  },
+
+  //搜索结果  4000
+  onadReady(item, args) {
+    // console.log('search wanka-ad_request_4000', args)
+    $umeng_stat.trackEvent('wanka-ad_request_4000',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+  },
+
+  onadShow(item, args) {
+    item.showAd = 1
+    $umeng_stat.trackEvent('wanka-ad_show_4000',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+  },
+
+  // 点击广告
+  onadClick(item, args) {
+    $umeng_stat.trackEvent('wanka-ad_click_4000',{user_imei: this.$app.$def.IMEI ,user_deviceid : this.$app.$def.DeviceId})
+  },
+  // 加载失败
+  onadError(item, args) {
+    item.showAd = 0
+  },
+  // 关闭广告
+  onadClosed(item, args) {
+    item.showAd = 0
+  },
+}
+</script>
+
+
+<style>
+@import "../Market/index.css";
+.main-page {
+  flex-direction: column;
+}
+.title-wrap {
+  height: 100px;
+  padding-left: 32px;
+  padding-right: 32px;
+  align-items: center;
+}
+.title-text {
+  margin-left: 32px;
+  font-size: 32px;
+  color: #f85836;
+}
+.search-wrap {
+  flex: 1;
+  height: 60px;
+  background-color: #f1f1f6;
+  border-radius: 30px;
+  align-items: center;
+}
+.icon-search {
+  width: 28px;
+  height: 28px;
+  margin-left: 32px;
+}
+.input-wrap {
+  margin-left: 20px;
+  margin-right: 32px;
+  flex: 1;
+}
+.hotword-title {
+  margin-top: 40px;
+  flex-direction: column;
+}
+.hotword-title-text {
+  margin-left: 32px;
+  font-size: 28px;
+  color: #acacb9;
+}
+.hotword-list {
+  margin-top: 40px;
+  flex-direction: column;
+  columns: 2;
+  padding-left: 32px;
+  padding-right: 22px;
+}
+.hotword-list-item {
+  margin-bottom: 40px;
+  align-items: center;
+}
+.hotword-idx-text {
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  background-color: #cccccc;
+  border-radius: 4px;
+  text-align: center;
+  color: #ffffff;
+}
+.hotword-name-text {
+  margin-left: 20px;
+  margin-right: 10px;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+.search-listitem {
+  margin-left: 32px;
+  margin-right: 32px;
+}
+.load-more {
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+}
+.tip_text {
+  margin-top: 20px;
+  margin-bottom: 30px;
+  margin-left: 32px;
+  font-size: 30px;
+  color: #acacb9;
+}
+
+.ad-one-position {
+  width: 100%;
+  height: 340px;
+  margin-top: 50px;
+}
+
+.ad-position {
+  width: 100%;
+  height: 340px;
+}
+.ad-item-class {
+  width: 100%;
+  height: 340px;
+}
+</style>
